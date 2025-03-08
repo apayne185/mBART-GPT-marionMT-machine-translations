@@ -1,0 +1,5 @@
+transfomers 
+torch
+sentencepiece 
+datasets
+sacremoses
