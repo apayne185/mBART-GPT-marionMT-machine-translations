@@ -1,5 +1,7 @@
-transfomers 
+transformers
 torch
-sentencepiece 
+sentencepiece
 datasets
 sacremoses
+accelerate
+bitsandbytes
