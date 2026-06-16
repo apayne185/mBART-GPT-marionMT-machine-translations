@@ -100,6 +100,23 @@ An LLM-as-judge evaluation pipeline built with [LangChain LCEL](https://python.l
 2. **Stage 2** — loads `Qwen/Qwen2.5-1.5B-Instruct` locally via `langchain-huggingface`, constructs an LCEL chain (`ChatPromptTemplate | ChatHuggingFace | StrOutputParser | RunnableLambda`), and evaluates all (source, translation) pairs with `.batch()`
 3. **Comparison** — cross-references LLM rankings against corpus-level BLEU to test whether surface metrics agree with LLM judgement (Research Question 2)
 
+### Judge results (Qwen2.5-1.5B-Instruct, en → de)
+
+| Model | Fluency | Adequacy | Style | Overall |
+|---|---|---|---|---|
+| MarianMT | 8.83 | 7.83 | 7.33 | **7.71** |
+| mBART-50 | 8.83 | 7.83 | 7.33 | **7.71** |
+| NLLB-200 | 8.83 | 7.83 | 7.33 | **7.71** |
+| GPT-2 | 6.83 | 6.33 | 6.33 | 6.44 |
+
+**Key findings from the LLM judge:**
+
+- **Rankings agree with BLEU**: MarianMT ≥ mBART-50 ≥ NLLB-200 > GPT-2 in both metrics, adding a third data point in favour of this ordering.
+- **The three MT models score identically (7.71)**, consistent with the LaBSE finding that they are semantically equivalent. The judge could not discriminate between them — which a larger model (7B+) likely would.
+- **The idiom sentence scores highest among MT models (8.2/10)** — the 1.5B judge awards high fluency because "Es regnet Katzen und Hunde" is grammatically correct German, even though it is not the idiomatic phrase. This is a known limitation of smaller LLM judges: they can assess grammar but may miss cultural/idiomatic errors.
+- **GPT-2 scores 6.44**, far more generously than BLEU's near-zero. The judge correctly penalises GPT-2's worst outputs ("MT systems": 4.1, "XLM-E code": 3.6) but is too lenient where GPT-2 produced plausible-looking English text.
+- **Limitation:** The generic, template-like comments ("The translation is fluent and conveys the full meaning accurately") reflect the capacity ceiling of a 1.5B judge. A 7B or 70B model would produce more discriminating and nuanced evaluation.
+
 ### Setup
 
 No API key required — the judge model (`Qwen/Qwen2.5-1.5B-Instruct`) runs locally. It is downloaded automatically from HuggingFace on first run and uses 4-bit quantisation on CUDA or float32 on CPU.
