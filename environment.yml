@@ -12,3 +12,5 @@ dependencies:
       - sacremoses
       - accelerate
       - bitsandbytes
+      - sentence-transformers
+      - scikit-learn
