@@ -51,9 +51,10 @@ def compute_bert_score(hypotheses, references, lang="de"):
 
 def evaluate(hypotheses, references, lang="de"):
     """
-    Compute all four MT evaluation metrics for a list of hypotheses vs references.
+    Compute reference-based MT metrics for a list of hypotheses vs references.
 
     Returns a dict with BLEU, chrF, METEOR, and BERTScore F1 (all scaled 0-100).
+    For the reference-free LaBSE cross-lingual score, call compute_labse() separately.
     """
     return {
         "BLEU":          compute_bleu(hypotheses, references),

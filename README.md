@@ -88,9 +88,8 @@ Different models use different language code conventions:
 ├── evaluation/
 │   ├── metrics.py      # BLEU, chrF, METEOR, BERTScore, LaBSE scoring functions
 │   ├── run_comparison.py  # Runs all models, scores, exports CSV + chart
-│   ├── visualize.py    # Grouped bar chart (can run standalone from results.csv)
-│   ├── results.csv     # Generated output — scores per model
-│   └── results.png     # Generated output — bar chart
+│   └── visualize.py    # Grouped bar chart (can run standalone from results.csv)
+│   # results.csv and results.png are generated on first run (gitignored)
 ├── environment.yml     # Conda environment
 └── requirements.txt    # Pip dependencies
 ```

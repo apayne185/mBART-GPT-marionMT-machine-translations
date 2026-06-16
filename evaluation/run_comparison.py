@@ -164,17 +164,24 @@ timing = {}
 for name, loader in MODEL_REGISTRY.items():
     print(f"[{name}] Loading...")
     t0 = time.time()
-    translate_fn, objects_to_free = loader()
-    translations = [translate_fn(src) for src in SOURCES]
-    elapsed = time.time() - t0
-    all_translations[name] = translations
-    timing[name] = elapsed
-    for obj in objects_to_free:
-        del obj
-    gc.collect()
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
-    print(f"[{name}] Done ({elapsed:.1f}s)")
+    try:
+        translate_fn, objects_to_free = loader()
+        translations = [translate_fn(src) for src in SOURCES]
+        elapsed = time.time() - t0
+        all_translations[name] = translations
+        timing[name] = elapsed
+        print(f"[{name}] Done ({elapsed:.1f}s)")
+    except Exception as e:
+        print(f"[{name}] Skipped — {e}")
+    finally:
+        try:
+            for obj in objects_to_free:
+                del obj
+        except NameError:
+            pass
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
 # ---------------------------------------------------------------------------
 # Evaluate and print results

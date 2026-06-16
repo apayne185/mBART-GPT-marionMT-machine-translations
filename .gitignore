@@ -2,3 +2,5 @@
 .vscode/
 __pycache__/
 *.pyc
+evaluation/results.csv
+evaluation/results.png
