@@ -138,7 +138,7 @@ conda activate nlp-mt
 
 ## Usage
 
-Run the full evaluation pipeline (translates with all models, scores, exports CSV and chart):
+Run the full evaluation pipeline on 6 hand-crafted sentences (good for quick inspection and translation output review):
 
 ```bash
 python evaluation/run_comparison.py
@@ -148,6 +148,19 @@ Outputs:
 - Console: translation table + scored metrics table
 - `evaluation/results.csv` — scores for all models and metrics
 - `evaluation/results.png` — grouped bar chart
+
+Run the WMT14 benchmark evaluation against a real MT benchmark dataset (newstest2014, 3003 professionally translated en→de sentences — the same test set used to evaluate the original Transformer):
+
+```bash
+python evaluation/run_benchmark.py        # first 100 sentences (~10 min on CPU)
+python evaluation/run_benchmark.py 500    # larger subset for more stable BLEU
+python evaluation/run_benchmark.py 3003   # full test set (~3 hrs on CPU)
+```
+
+Outputs:
+- Console: corpus-level metrics table + timing
+- `evaluation/benchmark_results.csv` — scores for all models and metrics
+- `evaluation/benchmark_results.png` — grouped bar chart
 
 Run cross-lingual semantic similarity analysis across all models (embeds source and translations using two independent embedding models, outputs per-sentence table and heatmap):
 
@@ -200,12 +213,14 @@ Different models use different language code conventions:
 │   └── semantic_similarity.py  # Per-sentence similarity analysis with LaBSE + mpnet
 │   # similarity_heatmap.png is generated on run (gitignored)
 ├── evaluation/
-│   ├── data.py            # Shared source sentences, references, and labels
+│   ├── data.py            # 6 hand-crafted source sentences, references, and labels
+│   ├── wmt14_loader.py    # Loads WMT14 newstest2014 from HuggingFace (en→de, up to 3003 pairs)
 │   ├── model_loaders.py   # Shared model loading functions (used by all pipelines)
 │   ├── metrics.py         # BLEU, chrF, METEOR, BERTScore, LaBSE scoring functions
-│   ├── run_comparison.py  # Runs all models, scores, exports CSV + chart
-│   └── visualize.py       # Grouped bar chart (can run standalone from results.csv)
-│   # results.csv and results.png are generated on first run (gitignored)
+│   ├── run_comparison.py  # Runs all models on 6 sentences, exports CSV + chart
+│   ├── run_benchmark.py   # Runs all models on WMT14 subset, exports CSV + chart
+│   └── visualize.py       # Grouped bar chart (can run standalone from any results CSV)
+│   # results.csv, results.png, benchmark_results.csv, benchmark_results.png gitignored
 ├── langchain_pipeline/
 │   ├── judge.py      # LCEL judge chain: ChatPromptTemplate | ChatHuggingFace | StrOutputParser | RunnableLambda
 │   └── pipeline.py   # Full pipeline: translate → LLM judge → rank comparison
