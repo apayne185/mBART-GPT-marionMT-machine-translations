@@ -2,6 +2,17 @@
 
 Comparative study of neural machine translation (NMT) models, evaluating translation quality and semantic preservation across architectures — from lightweight encoder-decoder models to large instruction-tuned LLMs.
 
+## Research Questions
+
+1. **Do dedicated MT models outperform instruction-tuned LLMs?**
+   mBART-50 and NLLB-200 were built specifically for translation; TowerInstruct is a general-purpose LLM fine-tuned for it; GPT-2 is an untuned baseline. Does architectural specialisation still matter when LLMs can be prompted?
+
+2. **Does surface-level evaluation agree with semantic evaluation?**
+   BLEU measures word overlap against a reference — a model could score well by copying common words while failing to preserve meaning. BERTScore and LaBSE measure semantic similarity via embeddings. Do they rank models the same way BLEU does?
+
+3. **Are semantic similarity findings robust across embedding models?**
+   LaBSE and `paraphrase-multilingual-mpnet-base-v2` are trained independently on different corpora. If both agree on which MT model best preserves meaning, that conclusion is more credible than if only one embedding model said so.
+
 ## Models
 
 | Model | Architecture | HuggingFace ID | Notes |
@@ -100,6 +111,8 @@ Different models use different language code conventions:
 │   └── semantic_similarity.py  # Per-sentence similarity analysis with LaBSE + mpnet
 │   # similarity_heatmap.png is generated on run (gitignored)
 ├── evaluation/
+│   ├── data.py         # Shared source sentences, references, and labels
+│   ├── model_loaders.py   # Shared model loading functions (used by both pipelines)
 │   ├── metrics.py      # BLEU, chrF, METEOR, BERTScore, LaBSE scoring functions
 │   ├── run_comparison.py  # Runs all models, scores, exports CSV + chart
 │   └── visualize.py    # Grouped bar chart (can run standalone from results.csv)
