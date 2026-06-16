@@ -17,6 +17,6 @@ dependencies:
       - sacrebleu
       - bert-score
       - langchain
-      - langchain-anthropic
+      - langchain-huggingface
       - langchain-core
       - python-dotenv

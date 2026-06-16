@@ -55,18 +55,12 @@ An LLM-as-judge evaluation pipeline built with [LangChain LCEL](https://python.l
 ### How it works
 
 1. **Stage 1** — reuses the existing model loaders to collect translations from all MT models (sequentially, memory-safe)
-2. **Stage 2** — constructs a `ChatPromptTemplate | ChatAnthropic | JsonOutputParser` LCEL chain, then calls `.batch()` with `max_concurrency=4` to evaluate all (source, translation) pairs in parallel
+2. **Stage 2** — loads `Qwen/Qwen2.5-1.5B-Instruct` locally via `langchain-huggingface`, constructs an LCEL chain (`ChatPromptTemplate | ChatHuggingFace | StrOutputParser | RunnableLambda`), and evaluates all (source, translation) pairs with `.batch()`
 3. **Comparison** — cross-references LLM rankings against corpus-level BLEU to test whether surface metrics agree with LLM judgement (Research Question 2)
 
 ### Setup
 
-Add your Anthropic API key to a `.env` file in the project root:
-
-```
-ANTHROPIC_API_KEY=sk-ant-...
-```
-
-Run the pipeline:
+No API key required — the judge model (`Qwen/Qwen2.5-1.5B-Instruct`) runs locally. It is downloaded automatically from HuggingFace on first run and uses 4-bit quantisation on CUDA or float32 on CPU.
 
 ```bash
 python langchain_pipeline/pipeline.py
@@ -154,7 +148,7 @@ Different models use different language code conventions:
 │   └── visualize.py       # Grouped bar chart (can run standalone from results.csv)
 │   # results.csv and results.png are generated on first run (gitignored)
 ├── langchain_pipeline/
-│   ├── judge.py      # LCEL judge chain: ChatPromptTemplate | Claude | JsonOutputParser
+│   ├── judge.py      # LCEL judge chain: ChatPromptTemplate | ChatHuggingFace | StrOutputParser | RunnableLambda
 │   └── pipeline.py   # Full pipeline: translate → LLM judge → rank comparison
 │   # judge_results.json is generated on run (gitignored)
 ├── environment.yml     # Conda environment (includes langchain + langchain-anthropic)

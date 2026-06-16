@@ -9,21 +9,22 @@ Two-stage pipeline:
       This reuses the existing memory-safe infrastructure.
 
   Stage 2 — LLM-as-Judge (LangChain)
-      Passes every (source, translation) pair through an LCEL judge chain
-      (see judge.py) using .batch() with max_concurrency for parallel API calls.
-      Claude evaluates fluency, adequacy, and style for each translation.
+      Loads a local Qwen2.5-1.5B-Instruct model via langchain-huggingface and
+      constructs an LCEL chain (see judge.py):
+          ChatPromptTemplate | ChatHuggingFace | StrOutputParser | RunnableLambda(extract_json)
+      Runs all (source, translation) pairs through the chain using .batch(),
+      then frees the judge model before printing results.
 
-After both stages, the pipeline cross-references LLM scores against corpus-level
-BLEU to investigate Research Question 2: do surface-level metrics agree with
-LLM judgement when ranking models?
+  Stage 3 — Comparison
+      Cross-references LLM judge rankings against corpus-level BLEU to
+      investigate Research Question 2: do surface-level metrics agree with
+      LLM judgement when ranking MT models?
 
 Usage:
-    Add your Anthropic API key to a .env file in the project root:
-        ANTHROPIC_API_KEY=sk-ant-...
+    conda activate nlp-mt
+    python langchain_pipeline/pipeline.py
 
-    Then run:
-        conda activate nlp-mt
-        python langchain_pipeline/pipeline.py
+No API key required — the judge model runs locally.
 """
 
 import gc
@@ -31,18 +32,7 @@ import json
 import os
 import sys
 import torch
-from dotenv import load_dotenv
 
-load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
-
-if not os.getenv("ANTHROPIC_API_KEY"):
-    raise EnvironmentError(
-        "ANTHROPIC_API_KEY not set.\n"
-        "Create a .env file in the project root with:\n"
-        "  ANTHROPIC_API_KEY=sk-ant-..."
-    )
-
-# Make evaluation/ importable from this directory
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "evaluation"))
 from data import SOURCES, REFERENCES, LABELS
 from metrics import compute_bleu
@@ -53,7 +43,7 @@ from judge import build_judge_chain
 
 
 # ---------------------------------------------------------------------------
-# Stage 1: Translate with each model sequentially
+# Stage 1: Translate with each MT model sequentially
 # ---------------------------------------------------------------------------
 
 print("=" * 70)
@@ -85,18 +75,18 @@ if not mt_models:
 
 
 # ---------------------------------------------------------------------------
-# Stage 2: LLM-as-judge via LangChain LCEL .batch()
+# Stage 2: LLM-as-judge via LangChain LCEL
 # ---------------------------------------------------------------------------
 
 print(f"\n{'=' * 70}")
-print("STAGE 2: LLM-AS-JUDGE (Claude Haiku via LangChain)")
+print("STAGE 2: LLM-AS-JUDGE (local Qwen2.5-1.5B-Instruct via LangChain)")
 print("=" * 70)
 
-judge_chain = build_judge_chain()
+judge_chain, judge_resources = build_judge_chain()
 
-# Flatten all (source, translation) pairs into a single batch.
-# .batch() with max_concurrency fires up to 4 API calls simultaneously,
-# which is more efficient than sequential .invoke() calls.
+# Flatten all (source, translation) pairs into a single list for .batch().
+# For a local model inference is sequential, but .batch() is still the correct
+# LangChain idiom and keeps the code consistent with API-backed workflows.
 batch_inputs: list[dict] = []
 batch_keys: list[tuple[str, int]] = []  # (model_name, sentence_index)
 
@@ -105,26 +95,32 @@ for model_name, translations in all_translations.items():
         batch_inputs.append({"source": src, "translation": trl})
         batch_keys.append((model_name, i))
 
-print(f"Sending {len(batch_inputs)} judge requests (max_concurrency=4)...")
-raw_results = judge_chain.batch(
-    batch_inputs,
-    config={"max_concurrency": 4},
-    return_exceptions=True,
-)
+print(f"Evaluating {len(batch_inputs)} (source, translation) pairs...")
+raw_results = judge_chain.batch(batch_inputs, return_exceptions=True)
 
-# Reshape flat results back into judge_scores[model_name][sentence_index]
+# Free the judge model immediately — results are now in raw_results
+judge_resources.clear()
+gc.collect()
+if torch.cuda.is_available():
+    torch.cuda.empty_cache()
+print("Judge model freed.")
+
+# Reshape flat results into judge_scores[model_name][sentence_index]
 judge_scores: dict[str, dict[int, dict]] = {name: {} for name in mt_models}
 failed = 0
 for (model_name, i), result in zip(batch_keys, raw_results):
     if isinstance(result, Exception):
-        print(f"  [Warning] Judge failed for {model_name} sentence {i}: {result}")
-        judge_scores[model_name][i] = {"fluency": 0, "adequacy": 0, "style": 0, "overall": 0.0, "comment": "evaluation failed"}
+        print(f"  [Warning] {model_name} sentence {i}: {result}")
+        judge_scores[model_name][i] = {
+            "fluency": 0, "adequacy": 0, "style": 0, "overall": 0.0,
+            "comment": "evaluation failed",
+        }
         failed += 1
     else:
         judge_scores[model_name][i] = result
 
 if failed:
-    print(f"  {failed} judgement(s) failed — those sentences are scored 0.")
+    print(f"  {failed}/{len(batch_inputs)} judgement(s) failed — scored 0.")
 
 
 # ---------------------------------------------------------------------------
@@ -154,7 +150,7 @@ for name in mt_models:
 
 
 # ---------------------------------------------------------------------------
-# Print: LLM ranking vs BLEU ranking — do they agree?
+# Print: LLM ranking vs BLEU ranking
 # ---------------------------------------------------------------------------
 
 print(f"\n{'=' * 70}")
@@ -201,7 +197,7 @@ print(f"\nModels with matching ranks: {agreement_count}/{len(mt_models)}")
 
 
 # ---------------------------------------------------------------------------
-# Print: per-sentence judge comments for best and worst LLM-ranked models
+# Print: per-sentence judge comments — best vs worst LLM-ranked model
 # ---------------------------------------------------------------------------
 
 best_model = llm_ranked[0]
@@ -225,6 +221,7 @@ for i, label in enumerate(LABELS):
 # ---------------------------------------------------------------------------
 
 output = {
+    "judge_model": "Qwen/Qwen2.5-1.5B-Instruct",
     "models": mt_models,
     "sources": SOURCES,
     "references": REFERENCES,
