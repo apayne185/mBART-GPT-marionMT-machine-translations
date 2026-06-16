@@ -40,5 +40,3 @@ translated_txts = [translate(text, model, tokenizer) for text in sample_txt]
 print("Original Texts: ", sample_txt)
 print("Translated Texts: ", translated_txts)
 
-
-
