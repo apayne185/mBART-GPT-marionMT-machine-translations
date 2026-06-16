@@ -1,16 +1,9 @@
 import torch
 from transformers import MarianMTModel, MarianTokenizer
 
-'''IMPORTANT NOTE ON XLM-E
-This model is not used for direct translations but instead, multi-lingual embeddings (vectors that capture
-their meanings). This means this is good for cross-lingual tasks (classification, similarity).
-
---> represents different languages in a shared embedding space for tasks that require multi-lingual input.
---> can show us similarity of meanings between languages, can identify languages, can retrieve information across languages
-
-
-we will be using marionMT, which is designed for translation of multilingual text
-'''
+# MarianMT is a lightweight encoder-decoder model trained on language-pair-specific corpora.
+# For cross-lingual semantic similarity (measuring meaning preservation across languages),
+# see labse/labse-model.py which uses a shared multilingual embedding space instead.
 
 src_lang = 'en'   # source language
 tgt_lang = 'de'   # target language
@@ -39,4 +32,3 @@ translated_txts = [translate(text, model, tokenizer) for text in sample_txt]
 
 print("Original Texts: ", sample_txt)
 print("Translated Texts: ", translated_txts)
-
