@@ -135,7 +135,7 @@ An LLM-as-judge evaluation pipeline built with [LangChain LCEL](https://python.l
 
 **Key findings from the LLM judge:**
 
-- **Rankings agree with BLEU**: MarianMT ≥ mBART-50 ≥ NLLB-200 > GPT-2 in both metrics, adding a third data point in favour of this ordering.
+- **Rankings broadly agree with BLEU**: all three MT models outperform GPT-2 in both metrics. BLEU and LLM judge converge on the same bottom-line conclusion: dedicated MT models >> untuned LLM baseline.
 - **The three MT models score identically (7.71)**, consistent with the LaBSE finding that they are semantically equivalent. The judge could not discriminate between them — which a larger model (7B+) likely would.
 - **The idiom sentence scores highest among MT models (8.2/10)** — the 1.5B judge awards high fluency because "Es regnet Katzen und Hunde" is grammatically correct German, even though it is not the idiomatic phrase. This is a known limitation of smaller LLM judges: they can assess grammar but may miss cultural/idiomatic errors.
 - **GPT-2 scores 6.44**, far more generously than BLEU's near-zero. The judge correctly penalises GPT-2's worst outputs ("MT systems": 4.1, "XLM-E code": 3.6) but is too lenient where GPT-2 produced plausible-looking English text.

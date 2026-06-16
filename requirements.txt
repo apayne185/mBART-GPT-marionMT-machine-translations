@@ -11,6 +11,8 @@ sacrebleu
 bert-score
 nltk
 protobuf
+numpy
+matplotlib
 langchain
 langchain-huggingface
 langchain-core
