@@ -4,3 +4,4 @@ __pycache__/
 *.pyc
 evaluation/results.csv
 evaluation/results.png
+semantic_analysis/similarity_heatmap.png

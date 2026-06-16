@@ -17,6 +17,7 @@ Comparative study of neural machine translation (NMT) models, evaluating transla
 | Tool | Purpose |
 |---|---|
 | **LaBSE** | Cross-lingual cosine similarity between source and translation — measures meaning preservation without needing a reference translation |
+| **paraphrase-multilingual-mpnet-base-v2** | Second independent embedding model used to verify that similarity-based model rankings are robust across embedding choices |
 
 ### Evaluation Metrics
 
@@ -48,7 +49,17 @@ Outputs:
 - `evaluation/results.csv` — scores for all models and metrics
 - `evaluation/results.png` — grouped bar chart
 
-Regenerate the chart from a saved CSV without re-running models:
+Run cross-lingual semantic similarity analysis across all models (embeds source and translations using two independent embedding models, outputs per-sentence table and heatmap):
+
+```bash
+python semantic_analysis/semantic_similarity.py
+```
+
+Outputs:
+- Console: per-sentence similarity scores + embedding model agreement table
+- `semantic_analysis/similarity_heatmap.png` — heatmap (models × sentences, coloured by cosine similarity)
+
+Regenerate the evaluation chart from a saved CSV without re-running models:
 
 ```bash
 python evaluation/visualize.py
@@ -84,7 +95,10 @@ Different models use different language code conventions:
 ├── nllb200/            # NLLB-200 distilled model
 ├── gpt/                # GPT-2 prompted translation baseline
 ├── towerinstruct/      # TowerInstruct-7B instruction-tuned LLM
-├── labse/              # LaBSE cross-lingual semantic similarity
+├── labse/              # LaBSE standalone demo
+├── semantic_analysis/
+│   └── semantic_similarity.py  # Per-sentence similarity analysis with LaBSE + mpnet
+│   # similarity_heatmap.png is generated on run (gitignored)
 ├── evaluation/
 │   ├── metrics.py      # BLEU, chrF, METEOR, BERTScore, LaBSE scoring functions
 │   ├── run_comparison.py  # Runs all models, scores, exports CSV + chart
