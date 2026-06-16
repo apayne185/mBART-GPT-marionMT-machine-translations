@@ -9,3 +9,7 @@ sentence-transformers
 scikit-learn
 sacrebleu
 bert-score
+langchain
+langchain-anthropic
+langchain-core
+python-dotenv

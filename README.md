@@ -40,6 +40,42 @@ Comparative study of neural machine translation (NMT) models, evaluating transla
 | **BERTScore F1** | Contextual embedding similarity between hypothesis and reference |
 | **LaBSE (en↔de)** | Cross-lingual embedding similarity from source to translation — reference-free |
 
+## LangChain Integration
+
+An LLM-as-judge evaluation pipeline built with [LangChain LCEL](https://python.langchain.com/docs/concepts/lcel/). It runs after translation to score each model on three linguistic dimensions that automated metrics cannot capture.
+
+### Judge dimensions
+
+| Dimension | What it measures |
+|---|---|
+| **Fluency** | Grammatical correctness and naturalness in German |
+| **Adequacy** | Preservation of source meaning without omissions or distortions |
+| **Style** | Appropriateness of register and word choice for a native speaker |
+
+### How it works
+
+1. **Stage 1** — reuses the existing model loaders to collect translations from all MT models (sequentially, memory-safe)
+2. **Stage 2** — constructs a `ChatPromptTemplate | ChatAnthropic | JsonOutputParser` LCEL chain, then calls `.batch()` with `max_concurrency=4` to evaluate all (source, translation) pairs in parallel
+3. **Comparison** — cross-references LLM rankings against corpus-level BLEU to test whether surface metrics agree with LLM judgement (Research Question 2)
+
+### Setup
+
+Add your Anthropic API key to a `.env` file in the project root:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Run the pipeline:
+
+```bash
+python langchain_pipeline/pipeline.py
+```
+
+Outputs:
+- Console: LLM judge scores table, LLM rank vs BLEU rank comparison, per-sentence comments for best and worst model
+- `langchain_pipeline/judge_results.json` — full structured output (gitignored)
+
 ## Setup
 
 ```bash
@@ -111,12 +147,16 @@ Different models use different language code conventions:
 │   └── semantic_similarity.py  # Per-sentence similarity analysis with LaBSE + mpnet
 │   # similarity_heatmap.png is generated on run (gitignored)
 ├── evaluation/
-│   ├── data.py         # Shared source sentences, references, and labels
-│   ├── model_loaders.py   # Shared model loading functions (used by both pipelines)
-│   ├── metrics.py      # BLEU, chrF, METEOR, BERTScore, LaBSE scoring functions
+│   ├── data.py            # Shared source sentences, references, and labels
+│   ├── model_loaders.py   # Shared model loading functions (used by all pipelines)
+│   ├── metrics.py         # BLEU, chrF, METEOR, BERTScore, LaBSE scoring functions
 │   ├── run_comparison.py  # Runs all models, scores, exports CSV + chart
-│   └── visualize.py    # Grouped bar chart (can run standalone from results.csv)
+│   └── visualize.py       # Grouped bar chart (can run standalone from results.csv)
 │   # results.csv and results.png are generated on first run (gitignored)
-├── environment.yml     # Conda environment
+├── langchain_pipeline/
+│   ├── judge.py      # LCEL judge chain: ChatPromptTemplate | Claude | JsonOutputParser
+│   └── pipeline.py   # Full pipeline: translate → LLM judge → rank comparison
+│   # judge_results.json is generated on run (gitignored)
+├── environment.yml     # Conda environment (includes langchain + langchain-anthropic)
 └── requirements.txt    # Pip dependencies
 ```
