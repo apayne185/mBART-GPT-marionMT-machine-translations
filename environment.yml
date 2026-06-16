@@ -1,0 +1,14 @@
+name: nlp-mt
+channels:
+  - defaults
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - torch
+      - transformers
+      - sentencepiece
+      - datasets
+      - sacremoses
+      - accelerate
+      - bitsandbytes
