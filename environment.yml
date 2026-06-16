@@ -16,6 +16,7 @@ dependencies:
       - scikit-learn
       - sacrebleu
       - bert-score
+      - nltk
       - langchain
       - langchain-huggingface
       - langchain-core

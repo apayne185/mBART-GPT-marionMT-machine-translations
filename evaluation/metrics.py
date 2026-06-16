@@ -1,7 +1,12 @@
 import warnings
 import numpy as np
-from sacrebleu.metrics import BLEU, CHRF, METEOR
+import nltk
+from sacrebleu.metrics import BLEU, CHRF
 from bert_score import score as _bert_score
+
+nltk.download("wordnet", quiet=True)
+nltk.download("omw-1.4", quiet=True)
+from nltk.translate.meteor_score import single_meteor_score
 
 _labse_model = None
 
@@ -38,7 +43,11 @@ def compute_chrf(hypotheses, references):
 
 
 def compute_meteor(hypotheses, references):
-    return round(METEOR().corpus_score(hypotheses, [references]).score, 2)
+    scores = [
+        single_meteor_score(ref.split(), hyp.split())
+        for hyp, ref in zip(hypotheses, references)
+    ]
+    return round(sum(scores) / len(scores) * 100, 2)
 
 
 def compute_bert_score(hypotheses, references, lang="de"):
