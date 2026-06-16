@@ -38,12 +38,21 @@ Comparative study of neural machine translation (NMT) models, evaluating transla
 
 ### Q3 — Are semantic similarity findings robust across embedding models?
 
-**Yes.** LaBSE and `paraphrase-multilingual-mpnet-base-v2` agree on model rankings across all sentences. Both place MarianMT ≈ NLLB-200 >> GPT-2. The one notable difference: mpnet assigns higher scores to GPT-2's outputs (range 0.09–0.75) than LaBSE does (range −0.10–0.48). This likely reflects mpnet being trained on more English-heavy multilingual data, making it less sensitive to the language mismatch when GPT-2 outputs English instead of German. LaBSE, optimised specifically for cross-lingual alignment, is more sensitive and therefore a stricter judge.
+**Mostly yes, but with one important exception.** Both LaBSE and mpnet rank models identically: MarianMT ≈ mBART-50 ≈ NLLB-200 >> GPT-2. The overall conclusion is robust. However, the two models diverge sharply on the idiom sentence ("raining cats and dogs"):
+
+- **LaBSE:** 0.84 for all three MT models — penalises the literal translation "Es regnet Katzen und Hunde" because the idiomatic *meaning* (heavy rain) is not fully preserved
+- **mpnet:** 0.99 for all three MT models — considers the literal translation near-perfect
+
+This is a genuine limitation: mpnet appears to capture surface-level conceptual overlap (raining → regnet, cats → Katzen) without detecting that the idiomatic meaning differs. LaBSE, optimised specifically for cross-lingual alignment, is more sensitive to this mismatch and is the stricter judge for figurative language. For evaluating idiom translation quality, LaBSE is the more reliable signal.
+
+A secondary divergence: mpnet is more lenient toward GPT-2's English outputs (scores 0.09–0.75) than LaBSE (−0.10–0.48), likely because mpnet was trained on more English-heavy multilingual data.
 
 ### Notable observations
 
-- **Idiom failure (all MT models):** "It's raining cats and dogs" → all models produce the literal "Es regnet Katzen und Hunde" rather than the idiomatic German "Es regnet in Strömen". LaBSE scores this at 0.84 — below average — reflecting that while the topic (rain) is preserved, the idiomatic register is lost. NMT models struggle with figurative language because it requires cultural knowledge, not pattern matching.
-- **Negative cosine similarity (GPT-2, "Neural nets"):** LaBSE scored GPT-2's output at −0.10 for the neural networks sentence, where it produced "The following text is from a paper by the same author" in a loop. A negative score means the output points in the *opposite direction* from the source in embedding space — not just wrong, but semantically anti-correlated.
+- **All three MT models are visually indistinguishable on the LaBSE heatmap.** MarianMT, mBART-50, and NLLB-200 occupy the same colour range (0.84–0.97). The 21-point BLEU gap between MarianMT and NLLB-200 does not appear anywhere in the semantic similarity results.
+- **mBART-50 scores highest on mpnet for the "Neural nets" sentence (0.91 vs 0.80 for MarianMT, 0.85 for NLLB-200).** mBART kept more loanwords from English ("Neural Networks", "Repräsentationen") which happen to be closer to the source in mpnet's embedding space — illustrating that higher embedding similarity does not always mean more natural German.
+- **Idiom failure (all MT models):** "It's raining cats and dogs" → all models produce the literal "Es regnet Katzen und Hunde" rather than the idiomatic "Es regnet in Strömen". NMT models lack the cultural knowledge to resolve figurative language.
+- **Negative cosine similarity (GPT-2, "Neural nets"):** LaBSE scored GPT-2's output at −0.10 where it looped "The following text is from a paper by the same author". Negative cosine similarity means the output points in the *opposite direction* from the source in embedding space — not just wrong, but semantically anti-correlated.
 - **Technical terms are easiest:** "XLM-E code" scored highest across all MT models (LaBSE 0.96–0.97) because the proper noun XLM-E requires no translation and anchors the sentence semantically.
 
 ## Models
