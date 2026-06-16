@@ -16,3 +16,9 @@ dependencies:
       - scikit-learn
       - sacrebleu
       - bert-score
+      - nltk
+      - protobuf
+      - langchain
+      - langchain-huggingface
+      - langchain-core
+      - python-dotenv

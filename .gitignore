@@ -5,3 +5,4 @@ __pycache__/
 evaluation/results.csv
 evaluation/results.png
 semantic_analysis/similarity_heatmap.png
+langchain_pipeline/judge_results.json
