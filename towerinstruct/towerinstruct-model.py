@@ -5,6 +5,12 @@ from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
 # Unlike mBART/MarianMT (encoder-decoder), this is a decoder-only LLM guided by instruction prompting.
 model_name = "Unbabel/TowerInstruct-7B-v0.2"
 
+if not torch.cuda.is_available():
+    raise EnvironmentError(
+        "TowerInstruct-7B requires a CUDA-capable GPU. "
+        "4-bit quantization is not supported on CPU."
+    )
+
 # 4-bit quantization reduces memory from ~14GB to ~4-5GB with minimal quality loss
 quantization_config = BitsAndBytesConfig(
     load_in_4bit=True,
