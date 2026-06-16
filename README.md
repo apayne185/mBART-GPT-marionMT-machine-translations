@@ -13,6 +13,39 @@ Comparative study of neural machine translation (NMT) models, evaluating transla
 3. **Are semantic similarity findings robust across embedding models?**
    LaBSE and `paraphrase-multilingual-mpnet-base-v2` are trained independently on different corpora. If both agree on which MT model best preserves meaning, that conclusion is more credible than if only one embedding model said so.
 
+## Key Findings
+
+### Evaluation results (en → de, 6 sentences)
+
+| Model | BLEU | chrF | METEOR | BERTScore F1 | LaBSE (en↔de) | Load+Infer |
+|---|---|---|---|---|---|---|
+| **MarianMT** | **51.97** | **75.15** | **69.42** | **93.19** | 90.02 | 26s |
+| mBART-50 | 30.82 | 66.97 | 57.59 | 89.91 | **90.33** | 150s |
+| NLLB-200 | 27.81 | 64.26 | 56.28 | 90.12 | 89.96 | **15s** |
+| GPT-2 | 0.04 | 4.76 | 0.99 | 46.93 | 27.03 | 68s |
+
+*TowerInstruct-7B requires a CUDA-capable GPU and is excluded from this run.*
+
+### Q1 — Do dedicated MT models outperform instruction-tuned LLMs?
+
+**Yes, decisively** on this task. MarianMT, a 300M-parameter model trained exclusively for en→de, outperforms every other model on all surface metrics. The generalist models (mBART-50, NLLB-200) score lower despite being larger, because they spread capacity across many language pairs. GPT-2 — an untuned language model — completely fails: BLEU 0.04, LaBSE 27.03. It loops or hallucinates in English rather than translating, confirming that language modelling ability alone does not confer translation ability.
+
+**Speed note:** NLLB-200 is the fastest (15s) despite being a 200-language model. mBART-50 is the slowest (150s), likely due to tokenizer overhead following the SentencePiece/protobuf fallback path on this system.
+
+### Q2 — Does surface-level evaluation agree with semantic evaluation?
+
+**Partially, but with an important caveat.** BLEU ranks MarianMT far ahead of mBART-50 (51.97 vs 30.82 — a 21-point gap). However, LaBSE — which measures cross-lingual meaning preservation directly from source to translation without a reference — ranks them near-equally: 90.02 vs 90.33. mBART-50 actually scores *higher* on LaBSE than MarianMT. Both models preserve meaning at the same level; MarianMT simply chooses words closer to the single human reference, inflating its BLEU score. BERTScore narrows the gap further (93.19 vs 89.91). **Conclusion: BLEU overstates the quality gap between specialised and generalist MT models when only one reference translation is available.**
+
+### Q3 — Are semantic similarity findings robust across embedding models?
+
+**Yes.** LaBSE and `paraphrase-multilingual-mpnet-base-v2` agree on model rankings across all sentences. Both place MarianMT ≈ NLLB-200 >> GPT-2. The one notable difference: mpnet assigns higher scores to GPT-2's outputs (range 0.09–0.75) than LaBSE does (range −0.10–0.48). This likely reflects mpnet being trained on more English-heavy multilingual data, making it less sensitive to the language mismatch when GPT-2 outputs English instead of German. LaBSE, optimised specifically for cross-lingual alignment, is more sensitive and therefore a stricter judge.
+
+### Notable observations
+
+- **Idiom failure (all MT models):** "It's raining cats and dogs" → all models produce the literal "Es regnet Katzen und Hunde" rather than the idiomatic German "Es regnet in Strömen". LaBSE scores this at 0.84 — below average — reflecting that while the topic (rain) is preserved, the idiomatic register is lost. NMT models struggle with figurative language because it requires cultural knowledge, not pattern matching.
+- **Negative cosine similarity (GPT-2, "Neural nets"):** LaBSE scored GPT-2's output at −0.10 for the neural networks sentence, where it produced "The following text is from a paper by the same author" in a loop. A negative score means the output points in the *opposite direction* from the source in embedding space — not just wrong, but semantically anti-correlated.
+- **Technical terms are easiest:** "XLM-E code" scored highest across all MT models (LaBSE 0.96–0.97) because the proper noun XLM-E requires no translation and anchors the sentence semantically.
+
 ## Models
 
 | Model | Architecture | HuggingFace ID | Notes |
