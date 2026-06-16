@@ -12,3 +12,12 @@ dependencies:
       - sacremoses
       - accelerate
       - bitsandbytes
+      - sentence-transformers
+      - scikit-learn
+      - sacrebleu
+      - bert-score
+      - nltk
+      - protobuf
+      - langchain
+      - langchain-huggingface
+      - langchain-core

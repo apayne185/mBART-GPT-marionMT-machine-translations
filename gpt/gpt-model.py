@@ -10,11 +10,16 @@ model = GPT2LMHeadModel.from_pretrained(model_name)
 tokenizer.pad_token = tokenizer.eos_token
 model.config.pad_token_id = tokenizer.eos_token_id
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = model.to(device)
+
 
 def translate(text, model, tokenizer, src_lang, tgt_lang):
     prompt = f"Translate the following text from {src_lang} to {tgt_lang}: {text}"
 
     inputs = tokenizer(prompt, return_tensors="pt", padding=True)
+    inputs = {k: v.to(device) for k, v in inputs.items()}
+    prompt_len = inputs["input_ids"].shape[1]
     with torch.no_grad():
         output = model.generate(
             inputs["input_ids"],
@@ -23,7 +28,8 @@ def translate(text, model, tokenizer, src_lang, tgt_lang):
             num_return_sequences=1,
             pad_token_id=tokenizer.eos_token_id,
         )
-    translated_txt = tokenizer.decode(output[0], skip_special_tokens=True)
+    # Decode only the generated tokens, not the prompt
+    translated_txt = tokenizer.decode(output[0][prompt_len:], skip_special_tokens=True)
 
     return translated_txt
 

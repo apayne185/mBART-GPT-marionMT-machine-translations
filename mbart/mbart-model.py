@@ -5,11 +5,15 @@ model_name = 'facebook/mbart-large-50-many-to-many-mmt'      # supports 50 langs
 tokenizer = MBart50TokenizerFast.from_pretrained(model_name)
 model = MBartForConditionalGeneration.from_pretrained(model_name)
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model = model.to(device)
+
 
 def translate(text, model, tokenizer, src_lang, tgt_lang):
     tokenizer.src_lang = src_lang
 
     inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True, max_length=512)
+    inputs = {k: v.to(device) for k, v in inputs.items()}
     # forced_bos_token_id tells the decoder which language to generate — required for mBART-50
     forced_bos_token_id = tokenizer.lang_code_to_id[tgt_lang]
     with torch.no_grad():
@@ -27,5 +31,3 @@ translated_txts = [translate(text, model, tokenizer, src_lang, tgt_lang) for tex
 
 print("Original Texts: ", sample_txt)
 print("Translated Texts: ", translated_txts)
-
-
