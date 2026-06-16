@@ -35,7 +35,7 @@ Comparative study of neural machine translation (NMT) models, evaluating transla
 | mBART-50 | 18.65 | 50.93 | 39.76 | 84.50 | 89.66 | 914s |
 | GPT-2 | 0.05 | 8.49 | 0.99 | 51.32 | 30.08 | 1622s |
 
-*Published WMT14 en→de BLEU for these models is typically 24–30; our lower scores reflect n=100 sampling and single-sentence inference without tuned beam search.*
+*Published WMT14 en→de BLEU for these models is typically 24–30. Dedicated MT models use beam search (num_beams=4); GPT-2 uses greedy decode, which is appropriate for a prompted causal LM. Remaining gap vs published scores reflects n=100 sampling and sentence-level (non-batched) inference.*
 
 ### Cross-dataset comparison — 6 sentences vs WMT14
 

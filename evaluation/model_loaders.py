@@ -21,7 +21,7 @@ def load_marianmt():
         inputs = {k: v.to(device) for k, v in
                   tokenizer(text, return_tensors="pt", padding=True, truncation=True).items()}
         with torch.no_grad():
-            output = model.generate(**inputs, max_new_tokens=256)
+            output = model.generate(**inputs, num_beams=4, max_new_tokens=256)
         return tokenizer.decode(output[0], skip_special_tokens=True)
 
     return translate, [model, tokenizer]
@@ -41,7 +41,7 @@ def load_mbart():
                   tokenizer(text, return_tensors="pt", padding=True,
                             truncation=True, max_length=512).items()}
         with torch.no_grad():
-            output = model.generate(**inputs, forced_bos_token_id=forced_bos, max_new_tokens=256)
+            output = model.generate(**inputs, forced_bos_token_id=forced_bos, num_beams=4, max_new_tokens=256)
         return tokenizer.decode(output[0], skip_special_tokens=True)
 
     return translate, [model, tokenizer]
@@ -61,7 +61,7 @@ def load_nllb():
                   tokenizer(text, return_tensors="pt", padding=True,
                             truncation=True, max_length=512).items()}
         with torch.no_grad():
-            output = model.generate(**inputs, forced_bos_token_id=forced_bos, max_new_tokens=256)
+            output = model.generate(**inputs, forced_bos_token_id=forced_bos, num_beams=4, max_new_tokens=256)
         return tokenizer.decode(output[0], skip_special_tokens=True)
 
     return translate, [model, tokenizer]
