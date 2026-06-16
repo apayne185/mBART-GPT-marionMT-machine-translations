@@ -14,4 +14,3 @@ protobuf
 langchain
 langchain-huggingface
 langchain-core
-python-dotenv

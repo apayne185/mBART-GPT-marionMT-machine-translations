@@ -28,9 +28,9 @@ Comparative study of neural machine translation (NMT) models, evaluating transla
 
 ### Q1 — Do dedicated MT models outperform instruction-tuned LLMs?
 
-**Yes, decisively** on this task. MarianMT, a 300M-parameter model trained exclusively for en→de, outperforms every other model on all surface metrics. The generalist models (mBART-50, NLLB-200) score lower despite being larger, because they spread capacity across many language pairs. GPT-2 — an untuned language model — completely fails: BLEU 0.04, LaBSE 27.03. It loops or hallucinates in English rather than translating, confirming that language modelling ability alone does not confer translation ability.
+**Partially answered** — TowerInstruct-7B requires a CUDA GPU (driver update pending) so the LLM-fine-tuned case cannot yet be compared. From the models that did run: **yes, the dedicated MT models outperform the untuned baseline decisively.** MarianMT, a 300M-parameter model trained exclusively for en→de, outperforms every other model on all surface metrics. The generalist models (mBART-50, NLLB-200) score lower despite being larger, because they spread capacity across many language pairs. GPT-2 — an untuned language model — completely fails: BLEU 0.04, LaBSE 27.03. It loops or hallucinates in English rather than translating, confirming that language modelling ability alone does not confer translation ability. The more interesting comparison (dedicated MT model vs instruction-tuned LLM such as TowerInstruct) remains open.
 
-**Speed note:** NLLB-200 is the fastest (15s) despite being a 200-language model. mBART-50 is the slowest (150s), likely due to tokenizer overhead following the SentencePiece/protobuf fallback path on this system.
+**Speed note:** NLLB-200 is the fastest (15s) despite being a 200-language model. mBART-50 is the slowest (150s), likely due to tokenizer overhead from the SentencePiece/protobuf fallback path on this system.
 
 ### Q2 — Does surface-level evaluation agree with semantic evaluation?
 
@@ -193,6 +193,6 @@ Different models use different language code conventions:
 │   ├── judge.py      # LCEL judge chain: ChatPromptTemplate | ChatHuggingFace | StrOutputParser | RunnableLambda
 │   └── pipeline.py   # Full pipeline: translate → LLM judge → rank comparison
 │   # judge_results.json is generated on run (gitignored)
-├── environment.yml     # Conda environment (includes langchain + langchain-anthropic)
+├── environment.yml     # Conda environment (includes langchain + langchain-huggingface)
 └── requirements.txt    # Pip dependencies
 ```
