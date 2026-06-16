@@ -1,3 +1,4 @@
+import csv
 import gc
 import os
 import sys
@@ -5,7 +6,7 @@ import time
 import torch
 
 sys.path.insert(0, os.path.dirname(__file__))
-from metrics import evaluate
+from metrics import evaluate, compute_labse
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -194,7 +195,11 @@ print("=" * 70)
 
 scores = {}
 for name, translations in all_translations.items():
-    scores[name] = evaluate(translations, REFERENCES, lang="de")
+    s = evaluate(translations, REFERENCES, lang="de")
+    # LaBSE cross-lingual: measures meaning preservation from source to translation
+    # without needing a reference — complementary to reference-based metrics above
+    s["LaBSE (en↔de)"] = compute_labse(SOURCES, translations)
+    scores[name] = s
 
 col_w = 14
 header = f"{'Model':<22}" + "".join(f"{k:>{col_w}}" for k in next(iter(scores.values())))
@@ -207,3 +212,25 @@ for name, s in scores.items():
 print("\nTime per model (load + inference):")
 for name, t in timing.items():
     print(f"  {name:<22} {t:.1f}s")
+
+# ---------------------------------------------------------------------------
+# Export results to CSV
+# ---------------------------------------------------------------------------
+csv_path = os.path.join(os.path.dirname(__file__), "results.csv")
+metric_names = list(next(iter(scores.values())).keys())
+with open(csv_path, "w", newline="", encoding="utf-8") as f:
+    writer = csv.writer(f)
+    writer.writerow(["Model"] + metric_names + ["Time (s)"])
+    for name, s in scores.items():
+        writer.writerow([name] + list(s.values()) + [round(timing[name], 1)])
+print(f"\nResults saved to {csv_path}")
+
+# ---------------------------------------------------------------------------
+# Visualize
+# ---------------------------------------------------------------------------
+try:
+    from visualize import save_chart
+    chart_path = os.path.join(os.path.dirname(__file__), "results.png")
+    save_chart(scores, chart_path)
+except Exception as e:
+    print(f"Visualization skipped: {e}")

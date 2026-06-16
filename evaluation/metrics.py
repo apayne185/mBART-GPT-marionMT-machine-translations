@@ -1,6 +1,30 @@
 import warnings
+import numpy as np
 from sacrebleu.metrics import BLEU, CHRF, METEOR
 from bert_score import score as _bert_score
+
+_labse_model = None
+
+
+def _get_labse():
+    global _labse_model
+    if _labse_model is None:
+        from sentence_transformers import SentenceTransformer
+        _labse_model = SentenceTransformer("LaBSE")
+    return _labse_model
+
+
+def compute_labse(texts_a, texts_b):
+    """
+    Cross-lingual cosine similarity via LaBSE (averaged over the corpus).
+    Called as compute_labse(sources, hypotheses) to measure meaning preservation
+    from source to translation — no reference translation needed.
+    """
+    model = _get_labse()
+    emb_a = model.encode(list(texts_a), normalize_embeddings=True)
+    emb_b = model.encode(list(texts_b), normalize_embeddings=True)
+    scores = [float(np.dot(a, b)) for a, b in zip(emb_a, emb_b)]
+    return round(sum(scores) / len(scores) * 100, 2)
 
 
 def compute_bleu(hypotheses, references):

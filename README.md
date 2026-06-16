@@ -12,11 +12,21 @@ Comparative study of neural machine translation (NMT) models, evaluating transla
 | **GPT-2** | Decoder-only (causal LM) | `gpt2` | Prompted translation baseline |
 | **TowerInstruct-7B** | Decoder-only (instruction-tuned) | `Unbabel/TowerInstruct-7B-v0.2` | LLaMA-2 fine-tuned for MT; requires CUDA |
 
-### Semantic Analysis
+### Semantic Analysis & Evaluation
 
 | Tool | Purpose |
 |---|---|
-| **LaBSE** | Cross-lingual semantic similarity — measures meaning preservation between source and translation via cosine similarity in a shared 109-language embedding space |
+| **LaBSE** | Cross-lingual cosine similarity between source and translation — measures meaning preservation without needing a reference translation |
+
+### Evaluation Metrics
+
+| Metric | What it measures |
+|---|---|
+| **BLEU** | Word n-gram precision against reference (surface overlap) |
+| **chrF** | Character n-gram overlap — more robust for German morphology |
+| **METEOR** | Accounts for synonyms and stemming; better semantic proxy than BLEU |
+| **BERTScore F1** | Contextual embedding similarity between hypothesis and reference |
+| **LaBSE (en↔de)** | Cross-lingual embedding similarity from source to translation — reference-free |
 
 ## Setup
 
@@ -26,6 +36,23 @@ conda activate nlp-mt
 ```
 
 ## Usage
+
+Run the full evaluation pipeline (translates with all models, scores, exports CSV and chart):
+
+```bash
+python evaluation/run_comparison.py
+```
+
+Outputs:
+- Console: translation table + scored metrics table
+- `evaluation/results.csv` — scores for all models and metrics
+- `evaluation/results.png` — grouped bar chart
+
+Regenerate the chart from a saved CSV without re-running models:
+
+```bash
+python evaluation/visualize.py
+```
 
 Run any model individually:
 
@@ -58,6 +85,12 @@ Different models use different language code conventions:
 ├── gpt/                # GPT-2 prompted translation baseline
 ├── towerinstruct/      # TowerInstruct-7B instruction-tuned LLM
 ├── labse/              # LaBSE cross-lingual semantic similarity
+├── evaluation/
+│   ├── metrics.py      # BLEU, chrF, METEOR, BERTScore, LaBSE scoring functions
+│   ├── run_comparison.py  # Runs all models, scores, exports CSV + chart
+│   ├── visualize.py    # Grouped bar chart (can run standalone from results.csv)
+│   ├── results.csv     # Generated output — scores per model
+│   └── results.png     # Generated output — bar chart
 ├── environment.yml     # Conda environment
 └── requirements.txt    # Pip dependencies
 ```
