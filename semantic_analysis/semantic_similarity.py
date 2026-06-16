@@ -20,6 +20,8 @@ import os
 import sys
 import torch
 import numpy as np
+import matplotlib
+matplotlib.use("Agg")  # non-interactive backend — works on headless servers with no display
 import matplotlib.pyplot as plt
 from sentence_transformers import SentenceTransformer
 
@@ -188,11 +190,7 @@ for name, loader in MODEL_REGISTRY.items():
     except Exception as e:
         print(f"[{name}] Skipped — {e}")
     finally:
-        try:
-            for obj in objects_to_free:
-                del obj
-        except NameError:
-            pass
+        objects_to_free.clear()  # drop list references; gc handles the rest
         gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
