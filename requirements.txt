@@ -7,3 +7,5 @@ accelerate
 bitsandbytes
 sentence-transformers
 scikit-learn
+sacrebleu
+bert-score
