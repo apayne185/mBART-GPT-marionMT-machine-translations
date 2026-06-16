@@ -26,6 +26,30 @@ Comparative study of neural machine translation (NMT) models, evaluating transla
 
 *TowerInstruct-7B requires a CUDA-capable GPU and is excluded from this run.*
 
+### WMT14 newstest2014 benchmark results (n=100)
+
+| Model | BLEU | chrF | METEOR | BERTScore F1 | LaBSE (en↔de) | Time |
+|---|---|---|---|---|---|---|
+| NLLB-200 | **20.81** | 51.42 | 41.71 | 84.53 | 88.09 | 419s |
+| MarianMT | 20.38 | **52.55** | **43.57** | **85.18** | **89.66** | 97s |
+| mBART-50 | 18.65 | 50.93 | 39.76 | 84.50 | 89.66 | 914s |
+| GPT-2 | 0.05 | 8.49 | 0.99 | 51.32 | 30.08 | 1622s |
+
+*Published WMT14 en→de BLEU for these models is typically 24–30; our lower scores reflect n=100 sampling and single-sentence inference without tuned beam search.*
+
+### Cross-dataset comparison — 6 sentences vs WMT14
+
+| Model | BLEU (6-sent) | BLEU (WMT14) | Δ BLEU | LaBSE (6-sent) | LaBSE (WMT14) | Δ LaBSE |
+|---|---|---|---|---|---|---|
+| MarianMT | 51.97 | 20.38 | −31.59 | 90.02 | 89.66 | −0.36 |
+| mBART-50 | 30.82 | 18.65 | −12.17 | 90.33 | 89.66 | −0.67 |
+| NLLB-200 | 27.81 | 20.81 | −7.00 | 89.96 | 88.09 | −1.87 |
+| GPT-2 | 0.04 | 0.05 | +0.01 | 27.03 | 30.08 | +3.05 |
+
+**The rankings reverse at scale.** MarianMT's BLEU advantage on 6 simple sentences disappears entirely on WMT14 news text — NLLB-200 now leads. NLLB's BLEU drop (−7) is the smallest of the three MT models, suggesting it is the most robust to domain shift. MarianMT's large drop (−31.59) indicates its 6-sentence score was inflated by the simplicity of the hand-crafted evaluation set. **LaBSE is far more stable than BLEU across datasets** (maximum drift: −1.87 vs −31.59), confirming it measures something more fundamental than surface word matching.
+
+A new finding at scale: **NLLB-200 leads BLEU but has the lowest LaBSE** among MT models (88.09 vs 89.66 for MarianMT/mBART). It produces translations closer to the reference in word choice, but slightly less faithful to the source in semantic content. This is only visible with a large enough evaluation set.
+
 ### Q1 — Do dedicated MT models outperform instruction-tuned LLMs?
 
 **Partially answered** — TowerInstruct-7B requires a CUDA GPU (driver update pending) so the LLM-fine-tuned case cannot yet be compared. From the models that did run: **yes, the dedicated MT models outperform the untuned baseline decisively.** MarianMT, a 300M-parameter model trained exclusively for en→de, outperforms every other model on all surface metrics. The generalist models (mBART-50, NLLB-200) score lower despite being larger, because they spread capacity across many language pairs. GPT-2 — an untuned language model — completely fails: BLEU 0.04, LaBSE 27.03. It loops or hallucinates in English rather than translating, confirming that language modelling ability alone does not confer translation ability. The more interesting comparison (dedicated MT model vs instruction-tuned LLM such as TowerInstruct) remains open.
