@@ -26,7 +26,7 @@ LANG_CONFIG = {
         "mbart_tgt":  "de_DE",
         "nllb_tgt":   "deu_Latn",
         "bert_lang":  "de",
-        # OPUS-100 config name (English first) and target key
+        # OPUS-100 config name (alphabetical pair order) and target key
         "opus_pair":  "de-en",
         "opus_key":   "de",
     },

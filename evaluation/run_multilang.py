@@ -105,6 +105,7 @@ for lang in LANGS:
     print("-" * len(header))
     for name, s in lang_scores.items():
         print(f"{name:<22}" + "".join(f"{v:>{col_w}.2f}" for v in s.values()))
+
     # Save translations for this language
     model_names_lang = list(lang_translations.keys())
     trans_path = os.path.join(os.path.dirname(__file__), f"translations_{lang}.csv")
