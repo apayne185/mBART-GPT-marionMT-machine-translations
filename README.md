@@ -206,18 +206,21 @@ Outputs per language:
 - `evaluation/results_{lang}.png` — grouped bar chart (gitignored)
 - `evaluation/translations_{lang}.csv` — what each model produced per sentence (gitignored)
 
-Run cross-language evaluation on OPUS-100 (same benchmark corpus across all three languages, enables fair cross-language comparison):
+Run the all-pairs evaluation on FLORES-200 (multi-way parallel corpus, any src→tgt):
 
 ```bash
-python evaluation/run_multilang.py           # n=100 per language (~30 min CPU)
-python evaluation/run_multilang.py 50        # faster, less stable BLEU
-python evaluation/run_multilang.py 200       # more stable, longer run
+python evaluation/run_multilang.py                    # all 12 pairs, n=100 per pair
+python evaluation/run_multilang.py 50                 # faster run, less stable BLEU
+python evaluation/run_multilang.py 100 en-de es-ar    # specific pairs only
+python evaluation/run_multilang.py 50 de-es ar-en     # two pairs, quick test
 ```
 
+Covers all 12 directed pairs from {en, de, es, ar}: en↔de, en↔es, en↔ar, de↔es, de↔ar, es↔ar. GPT-2 and TowerInstruct are skipped for non-English source. MarianMT is skipped for any pair where a direct `Helsinki-NLP/opus-mt-{src}-{tgt}` model does not exist.
+
 Outputs:
-- Console: per-language metric tables + cross-language BLEU/LaBSE summary
-- `evaluation/multilang_results.csv` — all models × all languages (gitignored)
-- `evaluation/translations_{lang}.csv` — translations per language (gitignored)
+- Console: per-pair metric tables + BLEU summary matrix across all pairs
+- `evaluation/multilang_results.csv` — all models × all pairs (gitignored)
+- `evaluation/translations_{src}-{tgt}.csv` — per-pair translation outputs (gitignored)
 
 Run the WMT14 benchmark against a standard MT research dataset (newstest2014, 3003 professionally translated en→de sentences — the same test set used to evaluate the original Transformer):
 
@@ -293,7 +296,7 @@ All language-specific codes are centralised in `evaluation/lang_config.py`. To a
 │   ├── model_loaders.py   # Shared model loading functions; accepts tgt_lang for multi-language
 │   ├── metrics.py         # BLEU, chrF, METEOR, BERTScore, LaBSE scoring functions
 │   ├── run_comparison.py  # 6 sentences × any language; exports CSV + chart + translations
-│   ├── run_multilang.py   # OPUS-100 evaluation across de/es/ar; exports cross-language summary
+│   ├── run_multilang.py   # FLORES-200 evaluation across all 12 directed pairs; exports BLEU matrix
 │   ├── run_benchmark.py   # WMT14 benchmark (en→de); exports CSV + chart + translations
 │   └── visualize.py       # Grouped bar chart (can run standalone from any results CSV)
 │   # results_*.csv, results_*.png, translations_*.csv, benchmark_* gitignored

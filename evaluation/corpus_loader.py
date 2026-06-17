@@ -1,57 +1,41 @@
 """
-OPUS-100 corpus loader for multi-language en→X evaluation.
+Corpus loaders for multilingual MT evaluation.
 
-OPUS-100 is a balanced, 100-language parallel corpus built from OPUS data.
-Each language pair has up to 1M training sentences and 2000 test sentences,
-professionally aligned from existing parallel corpora (EuroParl, CCAligned, etc.).
+load_opus100_pairs   — OPUS-100 (English-centric, en→X only, up to 2000 test pairs)
+load_flores200_pairs — FLORES-200 (multi-way parallel, any src→tgt, 1012 devtest sentences)
 
-Using OPUS-100 (rather than WMT14) for the multi-language benchmark ensures
-the same dataset format and test split size across all language pairs, making
-cross-language score comparisons fair.
+FLORES-200 is the preferred corpus for non-English-source pairs and for cross-language
+comparisons because all 1012 sentences are professionally translated and index-aligned
+across all 200 languages. This makes BLEU scores directly comparable across any
+language direction (e.g., en→de vs de→en vs es→ar).
 
-Note on pair naming: OPUS-100 uses alphabetical config names, so Arabic-English
-is "ar-en" (not "en-ar") and German-English is "de-en". The translation dict
-always contains both language codes as keys.
-
-Usage:
-    from corpus_loader import load_opus100_pairs
-    sources, references = load_opus100_pairs("es", n=100)
-    sources, references = load_opus100_pairs("ar", n=200)
+Dataset references:
+  OPUS-100:   Helsinki-NLP/opus-100 on HuggingFace
+  FLORES-200: facebook/flores on HuggingFace (configs named by NLLB/FLORES-200 codes)
 """
 
+import os
+import sys
+
 from datasets import load_dataset
+
+sys.path.insert(0, os.path.dirname(__file__))
 from lang_config import LANG_CONFIG
 
 
 def load_opus100_pairs(tgt_lang: str = "de", n: int = 100, split: str = "test"):
+    """Load en→tgt_lang pairs from OPUS-100.
+
+    OPUS-100 is English-centric — all configs pair English with one other language.
+    Config naming follows alphabetical order (e.g., "de-en", "en-es", "ar-en").
+    A fallback tries the reverse ordering in case of inconsistency.
+
+    Only usable for English-source evaluation. Use load_flores200_pairs for all others.
     """
-    Load the first n en→tgt_lang sentence pairs from OPUS-100.
-
-    Args:
-        tgt_lang: Two-letter target language code ("de", "es", "ar").
-                  Must be a key in LANG_CONFIG.
-        n:        Number of sentence pairs to load (default 100, max 2000 for test).
-        split:    Dataset split — "test" (2000 pairs), "validation" (2000 pairs),
-                  or "train" (up to 1M pairs).
-
-    Returns:
-        (sources, references): two lists of strings, both length n.
-        sources    — English sentences
-        references — Target-language reference translations
-    """
-    if tgt_lang not in LANG_CONFIG:
-        raise ValueError(
-            f"Unsupported language {tgt_lang!r}. "
-            f"Choose from: {list(LANG_CONFIG)}"
-        )
-
     cfg = LANG_CONFIG[tgt_lang]
-    key  = cfg["opus_key"]
-
-    # Try the configured pair name first, then its reverse (OPUS-100 naming varies)
+    key = cfg["opus_key"]
     primary = cfg["opus_pair"]
     reverse = "-".join(reversed(primary.split("-")))
-
     for pair in [primary, reverse]:
         try:
             ds = load_dataset("Helsinki-NLP/opus-100", pair, split=split)
@@ -61,9 +45,29 @@ def load_opus100_pairs(tgt_lang: str = "de", n: int = 100, split: str = "test"):
             return sources, references
         except Exception:
             continue
-
     raise ValueError(
-        f"Could not load OPUS-100 for '{tgt_lang}'. "
-        f"Tried configs: {primary!r}, {reverse!r}. "
-        f"Check available configs at huggingface.co/datasets/Helsinki-NLP/opus-100."
+        f"Could not load OPUS-100 for '{tgt_lang}'. Tried: {primary!r}, {reverse!r}. "
+        f"Check configs at huggingface.co/datasets/Helsinki-NLP/opus-100."
     )
+
+
+def load_flores200_pairs(src_lang: str, tgt_lang: str, n: int = 100, split: str = "devtest"):
+    """Load src→tgt sentence pairs from FLORES-200.
+
+    FLORES-200 (facebook/flores) is a multi-way parallel benchmark covering 200
+    languages. All sentences are index-aligned across every language config, making
+    scores directly comparable across any language direction.
+
+    Config names use NLLB-200 / FLORES-200 codes (stored in lang_config under nllb_code).
+    Available splits: devtest (1012 sentences), dev (997 sentences).
+    """
+    src_code = LANG_CONFIG[src_lang]["nllb_code"]
+    tgt_code = LANG_CONFIG[tgt_lang]["nllb_code"]
+
+    src_ds = load_dataset("facebook/flores", src_code, split=split)
+    tgt_ds = load_dataset("facebook/flores", tgt_code, split=split)
+
+    n = min(n, len(src_ds), len(tgt_ds))
+    sources    = [src_ds[i]["sentence"] for i in range(n)]
+    references = [tgt_ds[i]["sentence"] for i in range(n)]
+    return sources, references

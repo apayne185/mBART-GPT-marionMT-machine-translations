@@ -32,7 +32,7 @@ REFERENCES = get_references(TGT_LANG)
 LANG_NAME  = LANG_CONFIG[TGT_LANG]["name"]
 BERT_LANG  = LANG_CONFIG[TGT_LANG]["bert_lang"]
 
-MODEL_REGISTRY = build_registry(TGT_LANG)
+MODEL_REGISTRY = build_registry(tgt_lang=TGT_LANG)
 
 # ---------------------------------------------------------------------------
 # Translate with each model sequentially, freeing memory between each
