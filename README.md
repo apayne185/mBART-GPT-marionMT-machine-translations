@@ -30,20 +30,20 @@ Comparative study of neural machine translation (NMT) models, evaluating transla
 
 | Model | BLEU | chrF | METEOR | BERTScore F1 | LaBSE (en↔de) | Time |
 |---|---|---|---|---|---|---|
-| NLLB-200 | **20.81** | 51.42 | 41.71 | 84.53 | 88.09 | 419s |
-| MarianMT | 20.38 | **52.55** | **43.57** | **85.18** | **89.66** | 97s |
-| mBART-50 | 18.65 | 50.93 | 39.76 | 84.50 | 89.66 | 914s |
-| GPT-2 | 0.05 | 8.49 | 0.99 | 51.32 | 30.08 | 1622s |
+| NLLB-200 | **20.96** | 52.38 | 43.09 | 84.78 | 88.20 | 503s |
+| MarianMT | 20.38 | **52.55** | **43.57** | **85.18** | **89.66** | 50s |
+| mBART-50 | 18.94 | 51.05 | 40.04 | 84.51 | 89.71 | 351s |
+| GPT-2 | 0.05 | 8.49 | 0.99 | 51.32 | 30.08 | 865s |
 
-*Published WMT14 en→de BLEU for these models is typically 24–30. Dedicated MT models use beam search (num_beams=4); GPT-2 uses greedy decode, which is appropriate for a prompted causal LM. Remaining gap vs published scores reflects n=100 sampling and sentence-level (non-batched) inference.*
+*Dedicated MT models use beam search (num_beams=4); GPT-2 uses greedy decode, which is appropriate for a prompted causal LM. MarianMT's scores were unchanged by adding num_beams=4 — its generation_config.json already specifies beam search. Published WMT14 en→de BLEU is typically 26–28; remaining gap reflects n=100 sampling and sentence-level (non-batched) inference.*
 
 ### Cross-dataset comparison — 6 sentences vs WMT14
 
 | Model | BLEU (6-sent) | BLEU (WMT14) | Δ BLEU | LaBSE (6-sent) | LaBSE (WMT14) | Δ LaBSE |
 |---|---|---|---|---|---|---|
 | MarianMT | 51.97 | 20.38 | −31.59 | 90.02 | 89.66 | −0.36 |
-| mBART-50 | 30.82 | 18.65 | −12.17 | 90.33 | 89.66 | −0.67 |
-| NLLB-200 | 27.81 | 20.81 | −7.00 | 89.96 | 88.09 | −1.87 |
+| mBART-50 | 30.82 | 18.94 | −11.88 | 90.33 | 89.71 | −0.62 |
+| NLLB-200 | 27.81 | 20.96 | −6.85 | 89.96 | 88.20 | −1.76 |
 | GPT-2 | 0.04 | 0.05 | +0.01 | 27.03 | 30.08 | +3.05 |
 
 **The rankings reverse at scale.** MarianMT's BLEU advantage on 6 simple sentences disappears entirely on WMT14 news text — NLLB-200 now leads. NLLB's BLEU drop (−7) is the smallest of the three MT models, suggesting it is the most robust to domain shift. MarianMT's large drop (−31.59) indicates its 6-sentence score was inflated by the simplicity of the hand-crafted evaluation set. **LaBSE is far more stable than BLEU across datasets** (maximum drift: −1.87 vs −31.59), confirming it measures something more fundamental than surface word matching.
