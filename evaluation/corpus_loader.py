@@ -46,11 +46,24 @@ def load_opus100_pairs(tgt_lang: str = "de", n: int = 100, split: str = "test"):
         )
 
     cfg = LANG_CONFIG[tgt_lang]
-    pair = cfg["opus_pair"]
     key  = cfg["opus_key"]
 
-    ds = load_dataset("opus100", pair, split=split)
-    subset = ds.select(range(min(n, len(ds))))
-    sources    = [row["translation"]["en"] for row in subset]
-    references = [row["translation"][key]  for row in subset]
-    return sources, references
+    # Try the configured pair name first, then its reverse (OPUS-100 naming varies)
+    primary = cfg["opus_pair"]
+    reverse = "-".join(reversed(primary.split("-")))
+
+    for pair in [primary, reverse]:
+        try:
+            ds = load_dataset("opus100", pair, split=split)
+            subset = ds.select(range(min(n, len(ds))))
+            sources    = [row["translation"]["en"] for row in subset]
+            references = [row["translation"][key]  for row in subset]
+            return sources, references
+        except Exception:
+            continue
+
+    raise ValueError(
+        f"Could not load OPUS-100 for '{tgt_lang}'. "
+        f"Tried configs: {primary!r}, {reverse!r}. "
+        f"Check available configs at huggingface.co/datasets/opus100."
+    )
