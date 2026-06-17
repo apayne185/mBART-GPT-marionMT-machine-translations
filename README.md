@@ -222,6 +222,14 @@ Outputs:
 - `evaluation/multilang_results.csv` — all models × all pairs (gitignored)
 - `evaluation/translations_{src}-{tgt}.csv` — per-pair translation outputs (gitignored)
 
+After running, generate the full results document:
+
+```bash
+python evaluation/generate_results_md.py
+```
+
+This reads `multilang_results.csv` and writes **[RESULTS.md](RESULTS.md)** — full BLEU, chrF, METEOR, BERTScore, and LaBSE tables for all 12 pairs with per-metric winner annotations. Re-run after any new evaluation to refresh it. `RESULTS.md` is gitignored (generated artifact).
+
 Run the WMT14 benchmark against a standard MT research dataset (newstest2014, 3003 professionally translated en→de sentences — the same test set used to evaluate the original Transformer):
 
 ```bash
@@ -297,9 +305,10 @@ All language-specific codes are centralised in `evaluation/lang_config.py`. To a
 │   ├── metrics.py         # BLEU, chrF, METEOR, BERTScore, LaBSE scoring functions
 │   ├── run_comparison.py  # 6 sentences × any language; exports CSV + chart + translations
 │   ├── run_multilang.py   # FLORES-200 evaluation across all 12 directed pairs; exports BLEU matrix
-│   ├── run_benchmark.py   # WMT14 benchmark (en→de); exports CSV + chart + translations
-│   └── visualize.py       # Grouped bar chart (can run standalone from any results CSV)
-│   # results_*.csv, results_*.png, translations_*.csv, benchmark_* gitignored
+│   ├── run_benchmark.py        # WMT14 benchmark (en→de); exports CSV + chart + translations
+│   ├── generate_results_md.py  # Reads multilang_results.csv → writes RESULTS.md
+│   └── visualize.py            # Grouped bar chart (can run standalone from any results CSV)
+│   # results_*.csv, results_*.png, translations_*.csv, benchmark_*, multilang_results.csv gitignored
 ├── langchain_pipeline/
 │   ├── judge.py      # LCEL judge chain: ChatPromptTemplate | ChatHuggingFace | StrOutputParser | RunnableLambda
 │   └── pipeline.py   # Full pipeline: translate → LLM judge → rank comparison
