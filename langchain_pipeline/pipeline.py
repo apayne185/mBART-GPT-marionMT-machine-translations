@@ -34,7 +34,8 @@ import sys
 import torch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "evaluation"))
-from data import SOURCES, REFERENCES, LABELS
+from data import SOURCES, LABELS, get_references
+REFERENCES = get_references("de")
 from metrics import compute_bleu
 from model_loaders import build_registry
 
