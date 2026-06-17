@@ -54,7 +54,7 @@ def load_opus100_pairs(tgt_lang: str = "de", n: int = 100, split: str = "test"):
 
     for pair in [primary, reverse]:
         try:
-            ds = load_dataset("opus100", pair, split=split)
+            ds = load_dataset("Helsinki-NLP/opus-100", pair, split=split)
             subset = ds.select(range(min(n, len(ds))))
             sources    = [row["translation"]["en"] for row in subset]
             references = [row["translation"][key]  for row in subset]
@@ -65,5 +65,5 @@ def load_opus100_pairs(tgt_lang: str = "de", n: int = 100, split: str = "test"):
     raise ValueError(
         f"Could not load OPUS-100 for '{tgt_lang}'. "
         f"Tried configs: {primary!r}, {reverse!r}. "
-        f"Check available configs at huggingface.co/datasets/opus100."
+        f"Check available configs at huggingface.co/datasets/Helsinki-NLP/opus-100."
     )
