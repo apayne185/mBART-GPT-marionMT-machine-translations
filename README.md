@@ -26,11 +26,35 @@ Comparative study of neural machine translation (NMT) models, evaluating transla
 
 *TowerInstruct-7B requires a CUDA-capable GPU and is excluded from this run.*
 
+### WMT14 newstest2014 benchmark results (n=100)
+
+| Model | BLEU | chrF | METEOR | BERTScore F1 | LaBSE (en↔de) | Time |
+|---|---|---|---|---|---|---|
+| NLLB-200 | **20.96** | 52.38 | 43.09 | 84.78 | 88.20 | 503s |
+| MarianMT | 20.38 | **52.55** | **43.57** | **85.18** | **89.66** | 50s |
+| mBART-50 | 18.94 | 51.05 | 40.04 | 84.51 | 89.71 | 351s |
+| GPT-2 | 0.05 | 8.49 | 0.99 | 51.32 | 30.08 | 865s |
+
+*Dedicated MT models use beam search (num_beams=4); GPT-2 uses greedy decode, which is appropriate for a prompted causal LM. MarianMT's scores were unchanged by adding num_beams=4 — its generation_config.json already specifies beam search. Published WMT14 en→de BLEU is typically 26–28; remaining gap reflects n=100 sampling and sentence-level (non-batched) inference.*
+
+### Cross-dataset comparison — 6 sentences vs WMT14
+
+| Model | BLEU (6-sent) | BLEU (WMT14) | Δ BLEU | LaBSE (6-sent) | LaBSE (WMT14) | Δ LaBSE |
+|---|---|---|---|---|---|---|
+| MarianMT | 51.97 | 20.38 | −31.59 | 90.02 | 89.66 | −0.36 |
+| mBART-50 | 30.82 | 18.94 | −11.88 | 90.33 | 89.71 | −0.62 |
+| NLLB-200 | 27.81 | 20.96 | −6.85 | 89.96 | 88.20 | −1.76 |
+| GPT-2 | 0.04 | 0.05 | +0.01 | 27.03 | 30.08 | +3.05 |
+
+**The rankings reverse at scale.** MarianMT's BLEU advantage on 6 simple sentences disappears entirely on WMT14 news text — NLLB-200 now leads. NLLB's BLEU drop (−7) is the smallest of the three MT models, suggesting it is the most robust to domain shift. MarianMT's large drop (−31.59) indicates its 6-sentence score was inflated by the simplicity of the hand-crafted evaluation set. **LaBSE is far more stable than BLEU across datasets** (maximum drift: −1.87 vs −31.59), confirming it measures something more fundamental than surface word matching.
+
+A new finding at scale: **NLLB-200 leads BLEU but has the lowest LaBSE** among MT models (88.09 vs 89.66 for MarianMT/mBART). It produces translations closer to the reference in word choice, but slightly less faithful to the source in semantic content. This is only visible with a large enough evaluation set.
+
 ### Q1 — Do dedicated MT models outperform instruction-tuned LLMs?
 
-**Yes, decisively** on this task. MarianMT, a 300M-parameter model trained exclusively for en→de, outperforms every other model on all surface metrics. The generalist models (mBART-50, NLLB-200) score lower despite being larger, because they spread capacity across many language pairs. GPT-2 — an untuned language model — completely fails: BLEU 0.04, LaBSE 27.03. It loops or hallucinates in English rather than translating, confirming that language modelling ability alone does not confer translation ability.
+**Partially answered** — TowerInstruct-7B requires a CUDA GPU (driver update pending) so the LLM-fine-tuned case cannot yet be compared. From the models that did run: **yes, the dedicated MT models outperform the untuned baseline decisively.** MarianMT, a 300M-parameter model trained exclusively for en→de, outperforms every other model on all surface metrics. The generalist models (mBART-50, NLLB-200) score lower despite being larger, because they spread capacity across many language pairs. GPT-2 — an untuned language model — completely fails: BLEU 0.04, LaBSE 27.03. It loops or hallucinates in English rather than translating, confirming that language modelling ability alone does not confer translation ability. The more interesting comparison (dedicated MT model vs instruction-tuned LLM such as TowerInstruct) remains open.
 
-**Speed note:** NLLB-200 is the fastest (15s) despite being a 200-language model. mBART-50 is the slowest (150s), likely due to tokenizer overhead following the SentencePiece/protobuf fallback path on this system.
+**Speed note:** NLLB-200 is the fastest (15s) despite being a 200-language model. mBART-50 is the slowest (150s), likely due to tokenizer overhead from the SentencePiece/protobuf fallback path on this system.
 
 ### Q2 — Does surface-level evaluation agree with semantic evaluation?
 
@@ -38,12 +62,21 @@ Comparative study of neural machine translation (NMT) models, evaluating transla
 
 ### Q3 — Are semantic similarity findings robust across embedding models?
 
-**Yes.** LaBSE and `paraphrase-multilingual-mpnet-base-v2` agree on model rankings across all sentences. Both place MarianMT ≈ NLLB-200 >> GPT-2. The one notable difference: mpnet assigns higher scores to GPT-2's outputs (range 0.09–0.75) than LaBSE does (range −0.10–0.48). This likely reflects mpnet being trained on more English-heavy multilingual data, making it less sensitive to the language mismatch when GPT-2 outputs English instead of German. LaBSE, optimised specifically for cross-lingual alignment, is more sensitive and therefore a stricter judge.
+**Mostly yes, but with one important exception.** Both LaBSE and mpnet rank models identically: MarianMT ≈ mBART-50 ≈ NLLB-200 >> GPT-2. The overall conclusion is robust. However, the two models diverge sharply on the idiom sentence ("raining cats and dogs"):
+
+- **LaBSE:** 0.84 for all three MT models — penalises the literal translation "Es regnet Katzen und Hunde" because the idiomatic *meaning* (heavy rain) is not fully preserved
+- **mpnet:** 0.99 for all three MT models — considers the literal translation near-perfect
+
+This is a genuine limitation: mpnet appears to capture surface-level conceptual overlap (raining → regnet, cats → Katzen) without detecting that the idiomatic meaning differs. LaBSE, optimised specifically for cross-lingual alignment, is more sensitive to this mismatch and is the stricter judge for figurative language. For evaluating idiom translation quality, LaBSE is the more reliable signal.
+
+A secondary divergence: mpnet is more lenient toward GPT-2's English outputs (scores 0.09–0.75) than LaBSE (−0.10–0.48), likely because mpnet was trained on more English-heavy multilingual data.
 
 ### Notable observations
 
-- **Idiom failure (all MT models):** "It's raining cats and dogs" → all models produce the literal "Es regnet Katzen und Hunde" rather than the idiomatic German "Es regnet in Strömen". LaBSE scores this at 0.84 — below average — reflecting that while the topic (rain) is preserved, the idiomatic register is lost. NMT models struggle with figurative language because it requires cultural knowledge, not pattern matching.
-- **Negative cosine similarity (GPT-2, "Neural nets"):** LaBSE scored GPT-2's output at −0.10 for the neural networks sentence, where it produced "The following text is from a paper by the same author" in a loop. A negative score means the output points in the *opposite direction* from the source in embedding space — not just wrong, but semantically anti-correlated.
+- **All three MT models are visually indistinguishable on the LaBSE heatmap.** MarianMT, mBART-50, and NLLB-200 occupy the same colour range (0.84–0.97). The 21-point BLEU gap between MarianMT and NLLB-200 does not appear anywhere in the semantic similarity results.
+- **mBART-50 scores highest on mpnet for the "Neural nets" sentence (0.91 vs 0.80 for MarianMT, 0.85 for NLLB-200).** mBART kept more loanwords from English ("Neural Networks", "Repräsentationen") which happen to be closer to the source in mpnet's embedding space — illustrating that higher embedding similarity does not always mean more natural German.
+- **Idiom failure (all MT models):** "It's raining cats and dogs" → all models produce the literal "Es regnet Katzen und Hunde" rather than the idiomatic "Es regnet in Strömen". NMT models lack the cultural knowledge to resolve figurative language.
+- **Negative cosine similarity (GPT-2, "Neural nets"):** LaBSE scored GPT-2's output at −0.10 where it looped "The following text is from a paper by the same author". Negative cosine similarity means the output points in the *opposite direction* from the source in embedding space — not just wrong, but semantically anti-correlated.
 - **Technical terms are easiest:** "XLM-E code" scored highest across all MT models (LaBSE 0.96–0.97) because the proper noun XLM-E requires no translation and anchors the sentence semantically.
 
 ## Models
@@ -91,6 +124,23 @@ An LLM-as-judge evaluation pipeline built with [LangChain LCEL](https://python.l
 2. **Stage 2** — loads `Qwen/Qwen2.5-1.5B-Instruct` locally via `langchain-huggingface`, constructs an LCEL chain (`ChatPromptTemplate | ChatHuggingFace | StrOutputParser | RunnableLambda`), and evaluates all (source, translation) pairs with `.batch()`
 3. **Comparison** — cross-references LLM rankings against corpus-level BLEU to test whether surface metrics agree with LLM judgement (Research Question 2)
 
+### Judge results (Qwen2.5-1.5B-Instruct, en → de)
+
+| Model | Fluency | Adequacy | Style | Overall |
+|---|---|---|---|---|
+| MarianMT | 8.83 | 7.83 | 7.33 | **7.71** |
+| mBART-50 | 8.83 | 7.83 | 7.33 | **7.71** |
+| NLLB-200 | 8.83 | 7.83 | 7.33 | **7.71** |
+| GPT-2 | 6.83 | 6.33 | 6.33 | 6.44 |
+
+**Key findings from the LLM judge:**
+
+- **Rankings broadly agree with BLEU**: all three MT models outperform GPT-2 in both metrics. BLEU and LLM judge converge on the same bottom-line conclusion: dedicated MT models >> untuned LLM baseline.
+- **The three MT models score identically (7.71)**, consistent with the LaBSE finding that they are semantically equivalent. The judge could not discriminate between them — which a larger model (7B+) likely would.
+- **The idiom sentence scores highest among MT models (8.2/10)** — the 1.5B judge awards high fluency because "Es regnet Katzen und Hunde" is grammatically correct German, even though it is not the idiomatic phrase. This is a known limitation of smaller LLM judges: they can assess grammar but may miss cultural/idiomatic errors.
+- **GPT-2 scores 6.44**, far more generously than BLEU's near-zero. The judge correctly penalises GPT-2's worst outputs ("MT systems": 4.1, "XLM-E code": 3.6) but is too lenient where GPT-2 produced plausible-looking English text.
+- **Limitation:** The generic, template-like comments ("The translation is fluent and conveys the full meaning accurately") reflect the capacity ceiling of a 1.5B judge. A 7B or 70B model would produce more discriminating and nuanced evaluation.
+
 ### Setup
 
 No API key required — the judge model (`Qwen/Qwen2.5-1.5B-Instruct`) runs locally. It is downloaded automatically from HuggingFace on first run and uses 4-bit quantisation on CUDA or float32 on CPU.
@@ -112,7 +162,7 @@ conda activate nlp-mt
 
 ## Usage
 
-Run the full evaluation pipeline (translates with all models, scores, exports CSV and chart):
+Run the full evaluation pipeline on 6 hand-crafted sentences (good for quick inspection and translation output review):
 
 ```bash
 python evaluation/run_comparison.py
@@ -122,6 +172,19 @@ Outputs:
 - Console: translation table + scored metrics table
 - `evaluation/results.csv` — scores for all models and metrics
 - `evaluation/results.png` — grouped bar chart
+
+Run the WMT14 benchmark evaluation against a real MT benchmark dataset (newstest2014, 3003 professionally translated en→de sentences — the same test set used to evaluate the original Transformer):
+
+```bash
+python evaluation/run_benchmark.py        # first 100 sentences (~10 min on CPU)
+python evaluation/run_benchmark.py 500    # larger subset for more stable BLEU
+python evaluation/run_benchmark.py 3003   # full test set (~3 hrs on CPU)
+```
+
+Outputs:
+- Console: corpus-level metrics table + timing
+- `evaluation/benchmark_results.csv` — scores for all models and metrics
+- `evaluation/benchmark_results.png` — grouped bar chart
 
 Run cross-lingual semantic similarity analysis across all models (embeds source and translations using two independent embedding models, outputs per-sentence table and heatmap):
 
@@ -174,16 +237,18 @@ Different models use different language code conventions:
 │   └── semantic_similarity.py  # Per-sentence similarity analysis with LaBSE + mpnet
 │   # similarity_heatmap.png is generated on run (gitignored)
 ├── evaluation/
-│   ├── data.py            # Shared source sentences, references, and labels
+│   ├── data.py            # 6 hand-crafted source sentences, references, and labels
+│   ├── wmt14_loader.py    # Loads WMT14 newstest2014 from HuggingFace (en→de, up to 3003 pairs)
 │   ├── model_loaders.py   # Shared model loading functions (used by all pipelines)
 │   ├── metrics.py         # BLEU, chrF, METEOR, BERTScore, LaBSE scoring functions
-│   ├── run_comparison.py  # Runs all models, scores, exports CSV + chart
-│   └── visualize.py       # Grouped bar chart (can run standalone from results.csv)
-│   # results.csv and results.png are generated on first run (gitignored)
+│   ├── run_comparison.py  # Runs all models on 6 sentences, exports CSV + chart
+│   ├── run_benchmark.py   # Runs all models on WMT14 subset, exports CSV + chart
+│   └── visualize.py       # Grouped bar chart (can run standalone from any results CSV)
+│   # results.csv, results.png, benchmark_results.csv, benchmark_results.png gitignored
 ├── langchain_pipeline/
 │   ├── judge.py      # LCEL judge chain: ChatPromptTemplate | ChatHuggingFace | StrOutputParser | RunnableLambda
 │   └── pipeline.py   # Full pipeline: translate → LLM judge → rank comparison
 │   # judge_results.json is generated on run (gitignored)
-├── environment.yml     # Conda environment (includes langchain + langchain-anthropic)
+├── environment.yml     # Conda environment (includes langchain + langchain-huggingface)
 └── requirements.txt    # Pip dependencies
 ```

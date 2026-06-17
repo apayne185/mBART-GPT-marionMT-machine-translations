@@ -17,8 +17,9 @@ dependencies:
       - sacrebleu
       - bert-score
       - nltk
+      - numpy
+      - matplotlib
       - protobuf
       - langchain
       - langchain-huggingface
       - langchain-core
-      - python-dotenv

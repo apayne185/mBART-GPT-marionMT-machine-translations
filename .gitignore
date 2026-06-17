@@ -4,5 +4,7 @@ __pycache__/
 *.pyc
 evaluation/results.csv
 evaluation/results.png
+evaluation/benchmark_results.csv
+evaluation/benchmark_results.png
 semantic_analysis/similarity_heatmap.png
 langchain_pipeline/judge_results.json
