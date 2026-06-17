@@ -98,8 +98,18 @@ for name, t in timing.items():
     print(f"  {name:<22} {t:.1f}s")
 
 # ---------------------------------------------------------------------------
-# Export CSV
+# Export: metrics CSV + translations CSV
 # ---------------------------------------------------------------------------
+
+# Translations — one row per sentence, one column per model
+model_names = list(all_translations.keys())
+trans_path = os.path.join(os.path.dirname(__file__), f"translations_{TGT_LANG}.csv")
+with open(trans_path, "w", newline="", encoding="utf-8") as f:
+    writer = csv.writer(f)
+    writer.writerow(["Label", "Source", "Reference"] + model_names)
+    for i, (label, src, ref) in enumerate(zip(LABELS, SOURCES, REFERENCES)):
+        writer.writerow([label, src, ref] + [all_translations[m][i] for m in model_names])
+print(f"Translations saved to {trans_path}")
 
 csv_path = os.path.join(os.path.dirname(__file__), f"results_{TGT_LANG}.csv")
 metric_names = list(next(iter(scores.values())).keys())

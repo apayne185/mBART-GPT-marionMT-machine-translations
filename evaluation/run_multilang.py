@@ -105,7 +105,15 @@ for lang in LANGS:
     print("-" * len(header))
     for name, s in lang_scores.items():
         print(f"{name:<22}" + "".join(f"{v:>{col_w}.2f}" for v in s.values()))
-    print()
+    # Save translations for this language
+    model_names_lang = list(lang_translations.keys())
+    trans_path = os.path.join(os.path.dirname(__file__), f"translations_{lang}.csv")
+    with open(trans_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["i", "Source", "Reference"] + model_names_lang)
+        for i, (src, ref) in enumerate(zip(sources, references)):
+            writer.writerow([i + 1, src, ref] + [lang_translations[m][i] for m in model_names_lang])
+    print(f"Translations saved to {trans_path}\n")
 
 # ---------------------------------------------------------------------------
 # Cross-language summary
