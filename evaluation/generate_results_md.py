@@ -128,7 +128,7 @@ Re-run the generator after any new evaluation to refresh these tables.
 
 ## BERTScore F1
 
-{metric_table("BERTScore")}
+{metric_table("BERTScore F1")}
 
 ## LaBSE (source ↔ translation)
 
