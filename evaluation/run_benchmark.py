@@ -98,10 +98,21 @@ for name, t in timing.items():
     print(f"  {name:<22} {t:.1f}s  ({t/N:.2f}s/sent)")
 
 # ---------------------------------------------------------------------------
-# Export CSV
+# Export: metrics CSV + translations CSV
 # ---------------------------------------------------------------------------
 
 out_dir = os.path.dirname(__file__)
+
+# Translations — useful for inspecting what each model produced per sentence
+model_names = list(all_translations.keys())
+trans_path = os.path.join(out_dir, "benchmark_translations.csv")
+with open(trans_path, "w", newline="", encoding="utf-8") as f:
+    writer = csv.writer(f)
+    writer.writerow(["i", "Source", "Reference"] + model_names)
+    for i, (src, ref) in enumerate(zip(SOURCES, REFERENCES)):
+        writer.writerow([i + 1, src, ref] + [all_translations[m][i] for m in model_names])
+print(f"Translations saved to {trans_path}")
+
 csv_path = os.path.join(out_dir, "benchmark_results.csv")
 with open(csv_path, "w", newline="", encoding="utf-8") as f:
     writer = csv.writer(f)

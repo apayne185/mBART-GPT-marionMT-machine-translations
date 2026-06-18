@@ -2,9 +2,12 @@
 .vscode/
 __pycache__/
 *.pyc
-evaluation/results.csv
-evaluation/results.png
+evaluation/results_*.csv
+evaluation/results_*.png
+evaluation/translations_*.csv
 evaluation/benchmark_results.csv
 evaluation/benchmark_results.png
+evaluation/benchmark_translations.csv
+evaluation/multilang_results.csv
 semantic_analysis/similarity_heatmap.png
 langchain_pipeline/judge_results.json
