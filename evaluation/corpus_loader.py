@@ -52,26 +52,55 @@ def load_opus100_pairs(tgt_lang: str = "de", n: int = 100, split: str = "test"):
 
 
 def load_flores200_pairs(src_lang: str, tgt_lang: str, n: int = 100, split: str = "devtest"):
-    """Load src→tgt sentence pairs from FLORES-101 (gsarti/flores_101).
+    """Load src→tgt sentence pairs for MT evaluation.
 
-    FLORES-101 is a multi-way parallel benchmark covering 101 languages. All
-    1012 devtest sentences are professionally translated and index-aligned across
-    every language config, making scores directly comparable across any direction.
+    Tries sources in order:
+      1. facebook/flores  — official FLORES-200, gated (requires HuggingFace access)
+      2. gsarti/flores_101 — public FLORES-101, same 1012 sentences, needs datasets<3.0
+      3. OPUS-100          — fallback for English-involving pairs (en↔X both directions)
 
-    FLORES-200 (facebook/flores) uses the same source sentences but is gated on
-    HuggingFace. gsarti/flores_101 is publicly accessible and covers all four
-    supported languages (en, de, es, ar).
-
-    Config names use ISO 639-3 codes (stored in lang_config under flores_code).
-    Available splits: devtest (1012 sentences), dev (997 sentences).
+    Cross-lingual pairs (neither language English) require FLORES. Request access at
+    https://huggingface.co/datasets/facebook/flores — usually approved within minutes.
     """
-    src_code = LANG_CONFIG[src_lang]["flores_code"]
-    tgt_code = LANG_CONFIG[tgt_lang]["flores_code"]
+    # Try FLORES (official or community mirror)
+    for flores_name in ("facebook/flores", "gsarti/flores_101"):
+        try:
+            src_code = LANG_CONFIG[src_lang]["flores_code" if "101" in flores_name else "nllb_code"]
+            tgt_code = LANG_CONFIG[tgt_lang]["flores_code" if "101" in flores_name else "nllb_code"]
+            src_ds = load_dataset(flores_name, src_code, split=split)
+            tgt_ds = load_dataset(flores_name, tgt_code, split=split)
+            n = min(n, len(src_ds), len(tgt_ds))
+            return [src_ds[i]["sentence"] for i in range(n)], \
+                   [tgt_ds[i]["sentence"] for i in range(n)]
+        except Exception:
+            continue
 
-    src_ds = load_dataset("gsarti/flores_101", src_code, split=split)
-    tgt_ds = load_dataset("gsarti/flores_101", tgt_code, split=split)
+    # OPUS-100 fallback for English-involving pairs
+    if src_lang == "en":
+        return load_opus100_pairs(tgt_lang=tgt_lang, n=n, split="test")
+    if tgt_lang == "en":
+        return _load_opus100_reversed(src_lang=src_lang, n=n)
 
-    n = min(n, len(src_ds), len(tgt_ds))
-    sources    = [src_ds[i]["sentence"] for i in range(n)]
-    references = [tgt_ds[i]["sentence"] for i in range(n)]
-    return sources, references
+    raise ValueError(
+        f"No corpus available for {src_lang}→{tgt_lang}. "
+        f"Cross-lingual pairs require FLORES-200 access.\n"
+        f"Request it at: https://huggingface.co/datasets/facebook/flores"
+    )
+
+
+def _load_opus100_reversed(src_lang: str, n: int = 100, split: str = "test"):
+    """Load X→en pairs from OPUS-100 by treating the non-English side as source."""
+    cfg = LANG_CONFIG[src_lang]
+    key = cfg["opus_key"]
+    primary = cfg["opus_pair"]
+    reverse = "-".join(reversed(primary.split("-")))
+    for pair in [primary, reverse]:
+        try:
+            ds = load_dataset("Helsinki-NLP/opus-100", pair, split=split)
+            subset = ds.select(range(min(n, len(ds))))
+            sources    = [row["translation"][key]  for row in subset]
+            references = [row["translation"]["en"] for row in subset]
+            return sources, references
+        except Exception:
+            continue
+    raise ValueError(f"Could not load OPUS-100 for {src_lang}→en.")

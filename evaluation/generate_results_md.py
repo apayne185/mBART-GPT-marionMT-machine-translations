@@ -106,7 +106,7 @@ Re-run the generator after any new evaluation to refresh these tables.
 
 | Setting | Value |
 |---------|-------|
-| Dataset | FLORES-200 (`facebook/flores`, devtest split) |
+| Dataset | FLORES-200 devtest (where available); OPUS-100 test split for en↔X pairs |
 | Sentences per pair | {n_val} |
 | Language pairs | All 12 directed combinations from {{en, de, es, ar}} |
 | Decoding (MT models) | Beam search — num\\_beams=4, max\\_new\\_tokens=256 |

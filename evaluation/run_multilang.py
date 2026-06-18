@@ -93,7 +93,7 @@ for (src, tgt) in PAIRS:
     print("=" * 70)
 
     try:
-        print(f"Loading FLORES-200 {src}→{tgt}...")
+        print(f"Loading corpus {src}→{tgt} (FLORES-200 or OPUS-100 fallback)...")
         sources, references = load_flores200_pairs(src, tgt, n=N)
         print(f"Loaded {len(sources)} pairs.\n")
     except Exception as e:
