@@ -52,20 +52,24 @@ def load_opus100_pairs(tgt_lang: str = "de", n: int = 100, split: str = "test"):
 
 
 def load_flores200_pairs(src_lang: str, tgt_lang: str, n: int = 100, split: str = "devtest"):
-    """Load src→tgt sentence pairs from FLORES-200.
+    """Load src→tgt sentence pairs from FLORES-101 (gsarti/flores_101).
 
-    FLORES-200 (facebook/flores) is a multi-way parallel benchmark covering 200
-    languages. All sentences are index-aligned across every language config, making
-    scores directly comparable across any language direction.
+    FLORES-101 is a multi-way parallel benchmark covering 101 languages. All
+    1012 devtest sentences are professionally translated and index-aligned across
+    every language config, making scores directly comparable across any direction.
 
-    Config names use NLLB-200 / FLORES-200 codes (stored in lang_config under nllb_code).
+    FLORES-200 (facebook/flores) uses the same source sentences but is gated on
+    HuggingFace. gsarti/flores_101 is publicly accessible and covers all four
+    supported languages (en, de, es, ar).
+
+    Config names use ISO 639-3 codes (stored in lang_config under flores_code).
     Available splits: devtest (1012 sentences), dev (997 sentences).
     """
-    src_code = LANG_CONFIG[src_lang]["nllb_code"]
-    tgt_code = LANG_CONFIG[tgt_lang]["nllb_code"]
+    src_code = LANG_CONFIG[src_lang]["flores_code"]
+    tgt_code = LANG_CONFIG[tgt_lang]["flores_code"]
 
-    src_ds = load_dataset("facebook/flores", src_code, split=split)
-    tgt_ds = load_dataset("facebook/flores", tgt_code, split=split)
+    src_ds = load_dataset("gsarti/flores_101", src_code, split=split)
+    tgt_ds = load_dataset("gsarti/flores_101", tgt_code, split=split)
 
     n = min(n, len(src_ds), len(tgt_ds))
     sources    = [src_ds[i]["sentence"] for i in range(n)]

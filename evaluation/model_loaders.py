@@ -29,6 +29,7 @@ def load_marianmt(src_lang: str = "en", tgt_lang: str = "de"):
     from transformers import MarianMTModel, MarianTokenizer
     tokenizer = MarianTokenizer.from_pretrained(model_id)
     model = MarianMTModel.from_pretrained(model_id).to(device)
+    model.generation_config.max_length = None  # avoid conflict with max_new_tokens
 
     def translate(text):
         inputs = {k: v.to(device) for k, v in
@@ -48,6 +49,7 @@ def load_mbart(src_lang: str = "en", tgt_lang: str = "de"):
     model = MBartForConditionalGeneration.from_pretrained(
         "facebook/mbart-large-50-many-to-many-mmt"
     ).to(device)
+    model.generation_config.max_length = None  # avoid conflict with max_new_tokens
     forced_bos = tokenizer.lang_code_to_id[tgt_cfg["mbart_code"]]
 
     def translate(text):
@@ -72,6 +74,7 @@ def load_nllb(src_lang: str = "en", tgt_lang: str = "de"):
     model = AutoModelForSeq2SeqLM.from_pretrained(
         "facebook/nllb-200-distilled-600M"
     ).to(device)
+    model.generation_config.max_length = None  # avoid conflict with max_new_tokens
     forced_bos = tokenizer.convert_tokens_to_ids(tgt_cfg["nllb_code"])
 
     def translate(text):
