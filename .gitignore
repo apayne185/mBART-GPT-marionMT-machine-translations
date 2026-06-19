@@ -2,8 +2,8 @@
 .vscode/
 __pycache__/
 *.pyc
-evaluation/results_*.csv
-evaluation/results_*.png
+evaluation/results*.csv
+evaluation/results*.png
 evaluation/translations_*.csv
 evaluation/benchmark_results.csv
 evaluation/benchmark_results.png

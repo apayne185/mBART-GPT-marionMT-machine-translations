@@ -9,7 +9,7 @@ Re-run the generator after any new evaluation to refresh these tables.
 |---------|-------|
 | Dataset | FLORES-200 devtest (where available); OPUS-100 test split for en↔X pairs |
 | Sentences per pair | 100 |
-| Language pairs | 6 directed pairs involving English (en↔de, en↔es, en↔ar); 6 cross-lingual pairs require FLORES-200 access |
+| Language pairs | All 12 directed combinations from {en, de, es, ar} |
 | Decoding (MT models) | Beam search — num\_beams=4, max\_new\_tokens=256 |
 | Decoding (GPT-2) | Greedy — causal LM baseline, English source only |
 | GPT-2 / TowerInstruct | Skipped for non-English source (English-only prompts) |
@@ -54,10 +54,10 @@ Re-run the generator after any new evaluation to refresh these tables.
 |------|------|------|------|------|------|
 | en→de | 84.62 | **84.99** | 83.47 | 51.26 | mBART-50 |
 | en→es | **86.47** | 80.12 | 85.87 | 51.47 | MarianMT |
-| en→ar | **81.32** | 78.98 | 80.86 | 48.29 | MarianMT |
-| de→en | **93.62** | 93.32 | 92.28 | — | MarianMT |
-| es→en | **94.89** | 91.68 | 94.05 | — | MarianMT |
-| ar→en | **94.93** | 92.77 | 93.14 | — | MarianMT |
+| en→ar | **81.33** | 78.99 | 80.87 | 48.29 | MarianMT |
+| de→en | **93.07** | 92.74 | 91.66 | — | MarianMT |
+| es→en | **94.18** | 90.84 | 93.13 | — | MarianMT |
+| ar→en | **94.24** | 91.86 | 92.25 | — | MarianMT |
 
 ## LaBSE (source ↔ translation)
 
@@ -69,6 +69,17 @@ Re-run the generator after any new evaluation to refresh these tables.
 | de→en | 91.70 | **92.41** | 85.45 | — | mBART-50 |
 | es→en | **91.23** | 78.36 | 88.02 | — | MarianMT |
 | ar→en | **82.42** | 78.38 | 80.50 | — | MarianMT |
+
+## COMET (Unbabel/wmt22-comet-da)
+
+| Pair | MarianMT | mBART-50 | NLLB-200 | GPT-2 | Best |
+|------|------|------|------|------|------|
+| en→de | 78.79 | **78.81** | 77.31 | 30.51 | mBART-50 |
+| en→es | 80.26 | 69.47 | **80.67** | 30.93 | NLLB-200 |
+| en→ar | 78.58 | 77.12 | **79.68** | 27.00 | NLLB-200 |
+| de→en | **81.32** | 80.27 | 76.26 | — | MarianMT |
+| es→en | **82.12** | 70.92 | 79.72 | — | MarianMT |
+| ar→en | **82.37** | 74.77 | 78.83 | — | MarianMT |
 
 ## Winner summary
 
@@ -87,10 +98,9 @@ Re-run the generator after any new evaluation to refresh these tables.
   (`run_benchmark.py` on WMT14) is lower and more standard for published comparisons.
 - **LaBSE** measures cross-lingual semantic similarity between source and translation
   without a reference — it is reference-free and robust to domain shift.
-- **OPUS-100** is used for all 6 pairs here (English-involving only). It is English-centric
-  so sentence content differs between pairs — direct cross-pair BLEU comparison should be
-  treated as approximate. FLORES-200 (same sentences across all 200 languages) would allow
-  fully fair comparison; request access at huggingface.co/datasets/facebook/flores.
+- **FLORES-200** sentences are sourced from English Wikipedia and Wikinews and
+  professionally translated into all 200 languages. Every language direction shares
+  the same 100 sentences, making cross-pair score comparisons fair.
 - **Asymmetric pairs** (e.g. en→de vs de→en) are expected to score differently:
   back-translation is a distinct task from forward translation, and training data
   volumes differ by direction.

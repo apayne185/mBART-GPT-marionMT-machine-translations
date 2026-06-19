@@ -16,3 +16,4 @@ matplotlib
 langchain
 langchain-huggingface
 langchain-core
+unbabel-comet

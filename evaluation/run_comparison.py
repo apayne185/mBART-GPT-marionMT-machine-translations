@@ -47,7 +47,7 @@ for name, loader in MODEL_REGISTRY.items():
     t0 = time.time()
     try:
         translate_fn, objects_to_free = loader()
-        all_translations[name] = [translate_fn(src) for src in SOURCES]
+        all_translations[name] = translate_fn(SOURCES)
         elapsed = time.time() - t0
         timing[name] = elapsed
         print(f"[{name}] Done ({elapsed:.1f}s)")
@@ -82,7 +82,7 @@ print("=" * 70)
 
 scores = {}
 for name, translations in all_translations.items():
-    s = evaluate(translations, REFERENCES, lang=BERT_LANG)
+    s = evaluate(translations, REFERENCES, lang=BERT_LANG, sources=SOURCES)
     s["LaBSE (en↔tgt)"] = compute_labse(SOURCES, translations)
     scores[name] = s
 

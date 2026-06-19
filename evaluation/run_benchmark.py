@@ -50,19 +50,14 @@ timing: dict[str, float] = {}
 objects_to_free: list = []
 
 for name, loader in registry.items():
-    print(f"\n[{name}] Translating {N} sentences...")
+    print(f"\n[{name}] Translating {N} sentences...", flush=True)
     t0 = time.time()
     try:
         translate_fn, objects_to_free = loader()
-        translations = []
-        for i, src in enumerate(SOURCES):
-            translations.append(translate_fn(src))
-            if (i + 1) % 10 == 0:
-                print(f"  {i + 1}/{N}", end="\r", flush=True)
-        all_translations[name] = translations
+        all_translations[name] = translate_fn(SOURCES)
         elapsed = time.time() - t0
         timing[name] = elapsed
-        print(f"[{name}] Done ({elapsed:.1f}s, {elapsed/N:.2f}s/sentence)    ")
+        print(f"[{name}] Done ({elapsed:.1f}s, {elapsed/N:.2f}s/sentence)")
     except Exception as e:
         print(f"[{name}] Skipped — {e}")
     finally:
@@ -81,7 +76,7 @@ print("=" * 70)
 
 scores: dict[str, dict] = {}
 for name, translations in all_translations.items():
-    s = evaluate(translations, REFERENCES, lang="de")
+    s = evaluate(translations, REFERENCES, lang="de", sources=SOURCES)
     s["LaBSE (en↔de)"] = compute_labse(SOURCES, translations)
     scores[name] = s
 

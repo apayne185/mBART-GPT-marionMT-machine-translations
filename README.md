@@ -20,12 +20,12 @@ Comparative study of neural machine translation (NMT) models, evaluating transla
 
 ### Evaluation results (en → de, 6 sentences)
 
-| Model | BLEU | chrF | METEOR | BERTScore F1 | LaBSE (en↔tgt) | Load+Infer |
-|---|---|---|---|---|---|---|
-| NLLB-200 | **56.89** | **76.99** | **74.46** | 91.90 | 90.03 | 19s |
-| **MarianMT** | 51.97 | 75.15 | 69.42 | **93.19** | 90.02 | 5s |
-| mBART-50 | 33.49 | 67.01 | 59.63 | 90.11 | **90.21** | 14s |
-| GPT-2 | 0.04 | 4.76 | 0.99 | 46.93 | 27.03 | 39s |
+| Model | BLEU | chrF | METEOR | BERTScore F1 | COMET | LaBSE (en↔tgt) | Load+Infer |
+|---|---|---|---|---|---|---|---|
+| NLLB-200 | **56.89** | **76.99** | **74.46** | 91.90 | 85.56 | 90.03 | 19s |
+| **MarianMT** | 51.97 | 75.15 | 69.42 | **93.19** | **86.19** | 90.02 | 5s |
+| mBART-50 | 33.49 | 67.01 | 59.63 | 90.11 | 85.11 | **90.21** | 14s |
+| GPT-2 | 0.04 | 4.76 | 0.99 | 46.93 | 30.25 | 27.03 | 39s |
 
 *All dedicated MT models use beam search (num_beams=4). GPT-2 uses greedy decode. TowerInstruct-7B requires a CUDA-capable GPU. Load+Infer times shown are for cached models (first run includes download).*
 
@@ -38,7 +38,7 @@ Comparative study of neural machine translation (NMT) models, evaluating transla
 | mBART-50 | 18.94 | 51.05 | 40.04 | 84.51 | 89.71 | 351s |
 | GPT-2 | 0.05 | 8.49 | 0.99 | 51.32 | 30.08 | 865s |
 
-*Published WMT14 en→de BLEU is typically 26–28; remaining gap reflects n=100 sampling and sentence-level (non-batched) inference.*
+*Published WMT14 en→de BLEU is typically 26–28; remaining gap reflects n=100 sampling.*
 
 ### Cross-dataset comparison — 6 sentences vs WMT14
 
@@ -82,7 +82,9 @@ The multi-language results add nuance to Q1: the question is not just *dedicated
 
 ### Q2 — Does surface-level evaluation agree with semantic evaluation?
 
-**Partially, but with an important caveat.** BLEU places a 23-point gap between NLLB-200 (56.89) and mBART-50 (33.49) on German. However, LaBSE — which measures cross-lingual meaning preservation directly from source to translation, without a reference — ranks them near-equally: 90.03 vs 90.21. mBART-50 actually scores *higher* on LaBSE than NLLB-200 despite its much lower BLEU. Both models preserve meaning at the same level; NLLB-200 and MarianMT simply choose words closer to the single human reference, inflating their BLEU scores. BERTScore narrows the gap further (91.90 vs 90.11). **Conclusion: BLEU overstates the quality gap between MT models when only one reference translation is available.**
+**Partially, but with an important caveat.** BLEU places a 23-point gap between NLLB-200 (56.89) and mBART-50 (33.49) on German. However, LaBSE — which measures cross-lingual meaning preservation directly from source to translation, without a reference — ranks them near-equally: 90.03 vs 90.21. mBART-50 actually scores *higher* on LaBSE than NLLB-200 despite its much lower BLEU. Both models preserve meaning at the same level; NLLB-200 and MarianMT simply choose words closer to the single human reference, inflating their BLEU scores. BERTScore narrows the gap further (91.90 vs 90.11).
+
+**COMET (Unbabel/wmt22-comet-da)**, trained directly on human translation quality judgements rather than reference overlap, provides the strongest confirmation: at corpus level (100 sentences, OPUS-100), mBART-50 and MarianMT are virtually tied on COMET for en→de (78.81 vs 78.79) despite a 3-point BLEU gap. On en→es and en→ar, NLLB-200 wins COMET (80.67 and 79.68 respectively) yet MarianMT wins BLEU on both pairs — the model closest to the reference string is not the model a human rater would prefer. Three independent signals — LaBSE (reference-free embedding), BERTScore (reference-based embedding), and COMET (human-judgement model) — all converge on the same conclusion. **BLEU overstates the quality gap between MT models; the semantic and human-preference metrics paint a more uniform picture.**
 
 ### Q3 — Are semantic similarity findings robust across embedding models?
 
@@ -105,6 +107,7 @@ This is a genuine limitation: mpnet appears to capture surface-level conceptual 
 - **mBART-50 scores highest on mpnet for the "Neural nets" sentence (0.91 vs 0.80 for MarianMT, 0.85 for NLLB-200).** mBART kept more loanwords from English ("Neural Networks", "Repräsentationen") which happen to be closer to the source in mpnet's embedding space — illustrating that higher embedding similarity does not always mean more natural German.
 - **Idiom failure is universal across all three languages.** "It's raining cats and dogs" produces literal translations in German ("Es regnet Katzen und Hunde"), Spanish ("Está lloviendo gatos y perros"), and Arabic ("إنها تمطر القطط والكلاب") across all models. No model produces the idiomatic equivalents ("Es regnet in Strömen", "Está lloviendo a cántaros"). NMT models lack the cultural knowledge to resolve figurative language, regardless of target language.
 - **mBART-50 generates a non-existent Spanish word on the idiom sentence.** On "It's raining cats and dogs", mBART-50 produces a word that does not exist in Spanish. This type of hallucination — a fluent-looking but invented word — is a known failure mode of multilingual models whose vocabularies span many languages.
+- **COMET winner ≠ BLEU winner on English→target pairs.** At corpus level, MarianMT sweeps BLEU on all six English-involving pairs yet mBART-50 edges it on en→de COMET (78.81 vs 78.79) and NLLB-200 wins COMET on en→es (80.67) and en→ar (79.68). For back-translation (X→en), MarianMT wins both BLEU and COMET — suggesting its advantage is genuine when translating into English, while its BLEU edge on English-output pairs is partly an artefact of reference-matching rather than translation quality.
 - **Negative cosine similarity (GPT-2, "Neural nets"):** LaBSE scored GPT-2's output at −0.10 where it looped "The following text is from a paper by the same author". Negative cosine similarity means the output points in the *opposite direction* from the source in embedding space — not just wrong, but semantically anti-correlated.
 - **Technical terms are easiest:** "XLM-E code" scored highest across all MT models (LaBSE 0.96–0.97) because the proper noun XLM-E requires no translation and anchors the sentence semantically.
 - **MarianMT's scores were unchanged by explicitly adding num_beams=4.** Its `generation_config.json` already specifies beam search. This was confirmed by running with and without the parameter — scores are identical.
@@ -135,6 +138,7 @@ This is a genuine limitation: mpnet appears to capture surface-level conceptual 
 | **METEOR** | Accounts for synonyms and stemming; better semantic proxy than BLEU |
 | **BERTScore F1** | Contextual embedding similarity between hypothesis and reference |
 | **LaBSE (en↔tgt)** | Cross-lingual embedding similarity from source to translation — reference-free |
+| **COMET** | Neural metric (Unbabel/wmt22-comet-da) trained on human translation quality judgements; uses source + hypothesis + reference; correlates most strongly with human evaluation |
 
 ## LangChain Integration
 
@@ -228,7 +232,7 @@ After running, generate the full results document:
 python evaluation/generate_results_md.py
 ```
 
-This reads `multilang_results.csv` and writes **[RESULTS.md](RESULTS.md)** — full BLEU, chrF, METEOR, BERTScore, and LaBSE tables for all 12 pairs with per-metric winner annotations. Re-run after any new evaluation to refresh it. `RESULTS.md` is gitignored (generated artifact).
+This reads `multilang_results.csv` and writes **[RESULTS.md](RESULTS.md)** — full BLEU, chrF, METEOR, BERTScore, LaBSE, and COMET tables for all evaluated pairs with per-metric winner annotations. Re-run after any new evaluation to refresh it. `RESULTS.md` is committed to the repo so interviewers can view results without running any code.
 
 Run the WMT14 benchmark against a standard MT research dataset (newstest2014, 3003 professionally translated en→de sentences — the same test set used to evaluate the original Transformer):
 
@@ -301,8 +305,8 @@ All language-specific codes are centralised in `evaluation/lang_config.py`. To a
 │   ├── data.py            # 6 hand-crafted source sentences, references (de/es/ar), and labels
 │   ├── corpus_loader.py   # Loads OPUS-100 test pairs for any supported language
 │   ├── wmt14_loader.py    # Loads WMT14 newstest2014 from HuggingFace (en→de, up to 3003 pairs)
-│   ├── model_loaders.py   # Shared model loading functions; accepts tgt_lang for multi-language
-│   ├── metrics.py         # BLEU, chrF, METEOR, BERTScore, LaBSE scoring functions
+│   ├── model_loaders.py   # Shared model loading; batched translate_fn(list[str])→list[str] per loader
+│   ├── metrics.py         # BLEU, chrF, METEOR, BERTScore, LaBSE, COMET scoring functions
 │   ├── run_comparison.py  # 6 sentences × any language; exports CSV + chart + translations
 │   ├── run_multilang.py   # FLORES-200 evaluation across all 12 directed pairs; exports BLEU matrix
 │   ├── run_benchmark.py        # WMT14 benchmark (en→de); exports CSV + chart + translations
