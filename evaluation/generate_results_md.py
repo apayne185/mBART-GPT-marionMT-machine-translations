@@ -96,6 +96,10 @@ for pair in ordered_pairs:
     best_l, lbs_v  = best_for(pair, "LaBSE")
     winner_rows += f"| {arrow(pair)} | {best_b} | {bleu_v:.2f} | {best_l} | {lbs_v:.2f} |\n"
 
+comet_section = ""
+if "COMET" in metric_names:
+    comet_section = f"\n## COMET (Unbabel/wmt22-comet-da)\n\n{metric_table('COMET')}\n"
+
 md = f"""\
 # Machine Translation — Full Results
 
@@ -133,7 +137,7 @@ Re-run the generator after any new evaluation to refresh these tables.
 ## LaBSE (source ↔ translation)
 
 {metric_table("LaBSE")}
-
+{comet_section}
 ## Winner summary
 
 | Pair | Best (BLEU) | BLEU | Best (LaBSE) | LaBSE |

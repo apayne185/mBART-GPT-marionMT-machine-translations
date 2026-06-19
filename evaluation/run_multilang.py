@@ -106,19 +106,14 @@ for (src, tgt) in PAIRS:
     objects_to_free: list = []
 
     for name, loader in registry.items():
-        print(f"[{name}] Translating {N} sentences...")
+        print(f"[{name}] Translating {N} sentences...", flush=True)
         t0 = time.time()
         try:
             translate_fn, objects_to_free = loader()
-            translations = []
-            for i, sentence in enumerate(sources):
-                translations.append(translate_fn(sentence))
-                if (i + 1) % 10 == 0:
-                    print(f"  {i + 1}/{N}", end="\r", flush=True)
-            pair_translations[name] = translations
+            pair_translations[name] = translate_fn(sources)
             elapsed = time.time() - t0
             pair_timing[name] = elapsed
-            print(f"[{name}] Done ({elapsed:.1f}s)    ")
+            print(f"[{name}] Done ({elapsed:.1f}s)")
         except Exception as e:
             print(f"[{name}] Skipped — {e}")
         finally:
@@ -131,7 +126,7 @@ for (src, tgt) in PAIRS:
     bert_lang = LANG_CONFIG[tgt]["bert_lang"]
     pair_scores: dict[str, dict] = {}
     for name, translations in pair_translations.items():
-        scores = evaluate(translations, references, lang=bert_lang)
+        scores = evaluate(translations, references, lang=bert_lang, sources=sources)
         scores["LaBSE"] = compute_labse(sources, translations)
         pair_scores[name] = scores
 
